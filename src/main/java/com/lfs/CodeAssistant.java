@@ -1,6 +1,7 @@
+package com.lfs;
+
 import com.formdev.flatlaf.FlatDarculaLaf;
-import com.formdev.flatlaf.FlatLightLaf;
-import reader.CodeReader;
+import com.lfs.reader.CodeReader;
 
 import javax.swing.*;
 

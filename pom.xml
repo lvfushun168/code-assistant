@@ -23,6 +23,14 @@
         </dependency>
     </dependencies>
 
+<!--    <pluginRepositories>-->
+<!--        <pluginRepository>-->
+<!--            <id>central</id>-->
+<!--            <name>Maven Central Repository</name>-->
+<!--            <url>https://repo.maven.apache.org/maven2</url>-->
+<!--        </pluginRepository>-->
+<!--    </pluginRepositories>-->
+
     <build>
         <plugins>
             <!-- Maven Compiler Plugin, 确保使用 Java 11进行编译 -->
@@ -49,10 +57,44 @@
                         <configuration>
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>com.example.CodeReader</mainClass>
+                                    <mainClass>com.lfs.CodeAssistant</mainClass>
                                 </transformer>
                             </transformers>
                         </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- 打包成 .app -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>osxapp-maven-plugin</artifactId>
+                <version>1.0-alpha-2</version> <!-- 这是一个稳定的老版本，专门用于此目的 -->
+                <configuration>
+                    <!-- 指定主程序入口类 -->
+                    <mainClass>com.example.CodeReader</mainClass>
+                    <!-- 配置Info.plist文件，这是macOS应用的核心配置文件 -->
+                    <dictionary>
+                        <key>CFBundleName</key>
+                        <!-- 这里设置在菜单栏和Finder中显示的应用名称 -->
+                        <string>代码读取工具</string>
+                        <key>CFBundleDisplayName</key>
+                        <string>代码读取工具</string>
+                        <key>CFBundleIdentifier</key>
+                        <string>com.example.codereader</string>
+                        <key>CFBundleVersion</key>
+                        <string>1.0</string>
+                        <key>LSMinimumSystemVersion</key>
+                        <string>10.10</string> <!-- 兼容的最低macOS版本 -->
+                    </dictionary>
+                    <!-- 指定要打包的JAR文件，这里指向shade插件生成的结果 -->
+                    <jar>${project.build.directory}/${project.build.finalName}.jar</jar>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>bundle</goal>
+                        </goals>
                     </execution>
                 </executions>
             </plugin>

@@ -1,6 +1,4 @@
-package reader;
-
-import com.formdev.flatlaf.FlatLightLaf;
+package com.lfs.reader;
 
 import javax.swing.*;
 import java.awt.*;
