@@ -1,7 +1,7 @@
 package com.lfs;
 
 import com.formdev.flatlaf.FlatDarculaLaf;
-import com.lfs.reader.CodeReader;
+import com.lfs.ui.MainFrame;
 
 import javax.swing.*;
 
@@ -13,8 +13,8 @@ public class CodeAssistant {
 
         // 使用 SwingUtilities.invokeLater 来确保UI操作在事件调度线程中执行
         SwingUtilities.invokeLater(() -> {
-            CodeReader reader = new CodeReader();
-            reader.setVisible(true);
+            MainFrame mainFrame = new MainFrame();
+            mainFrame.setVisible(true);
         });
     }
 }

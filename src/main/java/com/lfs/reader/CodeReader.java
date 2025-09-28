@@ -243,7 +243,7 @@ public class CodeReader extends JFrame {
                     String extension = fileName.substring(lastDotIndex + 1).toLowerCase();
                     if (ALLOWED_EXTENSIONS.contains(extension)) {
                         String content = Files.readString(file.toPath());
-                        builder.append("--- 文件路径: ").append(file.getAbsolutePath()).append(" ---\n\n");
+//                        builder.append("--- 文件路径: ").append(file.getAbsolutePath()).append(" ---\n\n");
                         builder.append(content).append("\n\n");
                     }
                 }
