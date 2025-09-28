@@ -4,12 +4,15 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.prefs.Preferences;
 
 /**
  * 一个现代UI风格的GUI小工具，用于读取代码项目文件夹内容到剪切板。
@@ -23,16 +26,28 @@ public class CodeReader extends JFrame {
             "txt", "text", "md", "sql", "xml", "json", "sh", "bat"
     ));
 
+    // 用于持久化存储用户偏好（窗口大小、路径等）
+    private final Preferences prefs;
+    private static final String LAST_DIRECTORY_KEY = "lastDirectory";
+    private static final String WINDOW_X_KEY = "windowX";
+    private static final String WINDOW_Y_KEY = "windowY";
+    private static final String WINDOW_WIDTH_KEY = "windowWidth";
+    private static final String WINDOW_HEIGHT_KEY = "windowHeight";
+
+
     public CodeReader() {
+        // 初始化 Preferences API
+        prefs = Preferences.userNodeForPackage(CodeReader.class);
         initUI();
     }
 
     private void initUI() {
         // --- 窗口基础设置 ---
-        setTitle("代码内容读取工具");
-        setSize(450, 300); // 稍微加宽窗口以容纳两个按钮
+        setTitle("代码协作助手");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLocationRelativeTo(null); // 设置窗口在屏幕上居中
+
+        // --- 加载上次的窗口位置和大小 ---
+        loadWindowPreferences();
 
         // --- UI 组件创建 ---
         JButton selectContentButton = new JButton("选择内容");
@@ -41,18 +56,23 @@ public class CodeReader extends JFrame {
         JButton getStructureButton = new JButton("获取项目结构");
         getStructureButton.setFont(new Font("SansSerif", Font.PLAIN, 16));
 
-
         // --- 事件监听 ---
         selectContentButton.addActionListener(e -> onSelectContentButtonClick());
         getStructureButton.addActionListener(e -> onGetStructureButtonClick());
 
+        // 添加窗口监听器，在关闭时保存状态
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                saveWindowPreferences();
+            }
+        });
+
         // --- 布局设置 ---
-        // 使用一个 JPanel 来容纳两个按钮，并让它们水平排列
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 0)); // 居中对齐，按钮间距20像素
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 0));
         buttonPanel.add(selectContentButton);
         buttonPanel.add(getStructureButton);
 
-        // 使用 GridBagLayout 将 JPanel 整体居中
         setLayout(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0;
@@ -66,14 +86,13 @@ public class CodeReader extends JFrame {
      * "选择内容"按钮点击后执行的逻辑
      */
     private void onSelectContentButtonClick() {
-        JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-        fileChooser.setDialogTitle("请选择一个项目文件夹以读取内容");
-
+        JFileChooser fileChooser = createConfiguredFileChooser("请选择一个项目文件夹以读取内容");
         int result = fileChooser.showOpenDialog(this);
+
         if (result == JFileChooser.APPROVE_OPTION) {
             File selectedDirectory = fileChooser.getSelectedFile();
-            // 使用后台线程处理文件读取，避免UI卡顿
+            // 保存本次选择的目录
+            prefs.put(LAST_DIRECTORY_KEY, selectedDirectory.getAbsolutePath());
             new Thread(() -> processDirectoryForContent(selectedDirectory)).start();
         }
     }
@@ -82,17 +101,70 @@ public class CodeReader extends JFrame {
      * "获取项目结构"按钮点击后执行的逻辑
      */
     private void onGetStructureButtonClick() {
-        JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-        fileChooser.setDialogTitle("请选择一个项目文件夹以获取结构");
-
+        JFileChooser fileChooser = createConfiguredFileChooser("请选择一个项目文件夹以获取结构");
         int result = fileChooser.showOpenDialog(this);
+
         if (result == JFileChooser.APPROVE_OPTION) {
             File selectedDirectory = fileChooser.getSelectedFile();
-            // 使用后台线程处理，避免UI卡顿
+            // 保存本次选择的目录
+            prefs.put(LAST_DIRECTORY_KEY, selectedDirectory.getAbsolutePath());
             new Thread(() -> processDirectoryForStructure(selectedDirectory)).start();
         }
     }
+
+    /**
+     * 创建并配置 JFileChooser
+     * @param dialogTitle 对话框标题
+     * @return 配置好的 JFileChooser 实例
+     */
+    private JFileChooser createConfiguredFileChooser(String dialogTitle) {
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+        fileChooser.setDialogTitle(dialogTitle);
+        // 关键：设置为 false 以显示隐藏文件/文件夹
+        fileChooser.setFileHidingEnabled(false);
+
+        // 加载并设置上次访问的目录
+        String lastDir = prefs.get(LAST_DIRECTORY_KEY, null);
+        if (lastDir != null) {
+            File lastDirFile = new File(lastDir);
+            if (lastDirFile.exists() && lastDirFile.isDirectory()) {
+                fileChooser.setCurrentDirectory(lastDirFile);
+            }
+        }
+        return fileChooser;
+    }
+
+    /**
+     * 从 Preferences 加载窗口的大小和位置
+     */
+    private void loadWindowPreferences() {
+        int width = prefs.getInt(WINDOW_WIDTH_KEY, 450);
+        int height = prefs.getInt(WINDOW_HEIGHT_KEY, 300);
+        setSize(width, height);
+
+        int x = prefs.getInt(WINDOW_X_KEY, -1);
+        int y = prefs.getInt(WINDOW_Y_KEY, -1);
+        if (x != -1 && y != -1) {
+            setLocation(x, y);
+        } else {
+            // 如果没有保存的位置，则居中
+            setLocationRelativeTo(null);
+        }
+    }
+
+    /**
+     * 保存当前窗口的大小和位置到 Preferences
+     */
+    private void saveWindowPreferences() {
+        Rectangle bounds = getBounds();
+        prefs.putInt(WINDOW_X_KEY, bounds.x);
+        prefs.putInt(WINDOW_Y_KEY, bounds.y);
+        prefs.putInt(WINDOW_WIDTH_KEY, bounds.width);
+        prefs.putInt(WINDOW_HEIGHT_KEY, bounds.height);
+    }
+
+
 
     /**
      * 处理选定的文件夹：递归遍历、读取文件内容并复制到剪切板
