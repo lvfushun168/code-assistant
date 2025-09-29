@@ -40,6 +40,10 @@ public class MainFrame extends JFrame {
         JButton getStructureButton = new JButton("获取项目结构");
         getStructureButton.setFont(new Font("SansSerif", Font.PLAIN, 16));
 
+        // --- 竖向布局 ---
+        selectContentButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        getStructureButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+
         // --- 事件监听 ---
         selectContentButton.addActionListener(e -> onProcessDirectory(true));
         getStructureButton.addActionListener(e -> onProcessDirectory(false));
@@ -52,8 +56,10 @@ public class MainFrame extends JFrame {
         });
 
         // --- 布局设置 ---
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 0));
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setLayout(new BoxLayout(buttonPanel, BoxLayout.Y_AXIS));
         buttonPanel.add(selectContentButton);
+        buttonPanel.add(Box.createRigidArea(new Dimension(0, 20)));
         buttonPanel.add(getStructureButton);
 
         setLayout(new GridBagLayout());
