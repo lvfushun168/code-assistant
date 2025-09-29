@@ -10,7 +10,6 @@ import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
-import java.io.File;
 
 /**
  * 主框架显示UI
@@ -81,14 +80,8 @@ public class MainFrame extends JFrame {
         JScrollPane rightScrollPane = new JScrollPane(rightTextArea);
         this.rightTextArea = rightTextArea;
 
-        // --- 创建JSplitPane ---
-        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, leftPanel, rightScrollPane);
-        splitPane.setOneTouchExpandable(true);
-        splitPane.setDividerLocation(200); // 初始分割位置
-
-        // --- 主窗口布局 ---
-        setLayout(new BorderLayout());
-        add(splitPane, BorderLayout.CENTER);
+        // --- 创建右侧面板 ---
+        JPanel rightPanel = new JPanel(new BorderLayout());
 
         // --- 创建菜单栏 ---
         JMenuBar menuBar = new JMenuBar();
@@ -106,8 +99,18 @@ public class MainFrame extends JFrame {
         menuBar.add(saveMenu);
         menuBar.add(importMenu);
 
-        // --- 设置窗口的菜单栏 ---
-        setJMenuBar(menuBar);
+        // --- 将菜单栏和文本区域添加到右侧面板 ---
+        rightPanel.add(menuBar, BorderLayout.NORTH);
+        rightPanel.add(rightScrollPane, BorderLayout.CENTER);
+
+        // --- 创建JSplitPane ---
+        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, leftPanel, rightPanel);
+        splitPane.setOneTouchExpandable(true);
+        splitPane.setDividerLocation(200); // 初始分割位置
+
+        // --- 主窗口布局 ---
+        setLayout(new BorderLayout());
+        add(splitPane, BorderLayout.CENTER);
     }
 
     private void onSaveAs() {
