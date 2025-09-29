@@ -22,18 +22,17 @@ public class TextLineNumber extends JComponent implements DocumentListener, Care
 
     private final static int HEIGHT = Integer.MAX_VALUE - 1000000;
 
-    //  Text component this TextLineNumber component is in sync with
+    //  此 TextLineNumber 组件与之同步的文本组件
     private JTextComponent component;
 
-    //  Properties that can be changed
+    //  可更改的属性
     private boolean updateFont;
     private int borderGap;
     private Color currentLineForeground;
     private float digitAlignment;
     private int minimumDisplayDigits;
 
-    //  Keep history information to reduce the number of times the component
-    //  needs to be repainted
+    //  保留历史信息以减少组件的更新次数
     private int lastDigits;
     private int lastHeight;
     private int lastLine;
@@ -41,11 +40,10 @@ public class TextLineNumber extends JComponent implements DocumentListener, Care
     private HashMap<String, FontMetrics> fonts;
 
     /**
-     *	Create a line number component for a text component. This component
-     *  will be displayed as a column in a JScrollPane that contains the
-     *  text component.
+     * 为文本组件创建一个行号组件
+     * 这个组件将作为包含文本组件的JScrollPane中的一列显示。
      *
-     *  @param component  the related text component
+     *  @param component  相关文本组件
      */
     public TextLineNumber(JTextComponent component)
     {
@@ -53,13 +51,12 @@ public class TextLineNumber extends JComponent implements DocumentListener, Care
     }
 
     /**
-     *	Create a line number component for a text component. This component
-     *  will be displayed as a column in a JScrollPane that contains the
-     *  text component.
+     *	为文本组件创建行号组件。
+     *  此组件将在包含文本组件的JScrollPane中显示为一列。
      *
-     *  @param component  the related text component
-     *  @param minimumDisplayDigits  the number of digits used to calculate
-     *                               the preferred width of the component.
+     *  @param component  相关文本组件
+     *  @param minimumDisplayDigits  用于计算的数字位数
+     *                               组件的优选宽度。
      */
     public TextLineNumber(JTextComponent component, int minimumDisplayDigits)
     {
@@ -68,7 +65,7 @@ public class TextLineNumber extends JComponent implements DocumentListener, Care
         setFont( component.getFont() );
 
         setBorderGap( 5 );
-        setCurrentLineForeground( Color.ORANGE );
+        setCurrentLineForeground(new Color(255, 100, 0));
         setDigitAlignment( RIGHT );
         setMinimumDisplayDigits( minimumDisplayDigits );
 
@@ -118,7 +115,7 @@ public class TextLineNumber extends JComponent implements DocumentListener, Care
     {
         this.borderGap = borderGap;
         Border inner = new EmptyBorder(0, borderGap, 0, borderGap);
-        setBorder( new CompoundBorder(new MatteBorder(0, 0, 0, 2, Color.GRAY), inner) );
+        setBorder( new CompoundBorder(new MatteBorder(0, 0, 0, 1, Color.LIGHT_GRAY), inner) );
         lastDigits = 0;
         setPreferredWidth();
     }
@@ -395,19 +392,16 @@ public class TextLineNumber extends JComponent implements DocumentListener, Care
 
         SwingUtilities.invokeLater( () ->
         {
-            try
-            {
-                int endPos = component.getDocument().getLength();
-                Rectangle rect = component.modelToView(endPos);
+            int preferredHeight = component.getPreferredSize().height;
 
-                if (rect != null && rect.y != lastHeight)
-                {
-                    setPreferredWidth();
-                    getParent().repaint();
-                    lastHeight = rect.y;
-                }
+            if (lastHeight != preferredHeight)
+            {
+                setPreferredWidth();
+                setPreferredSize(new Dimension(getPreferredSize().width, preferredHeight));
+                getParent().revalidate();
+                getParent().repaint();
+                lastHeight = preferredHeight;
             }
-            catch (BadLocationException ex) { /* ignore */ }
         });
     }
 
