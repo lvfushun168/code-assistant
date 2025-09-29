@@ -6,7 +6,7 @@
 
     <groupId>com.example</groupId>
     <artifactId>code-assistant</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0.0</version>
 
     <properties>
         <maven.compiler.source>11</maven.compiler.source>
@@ -66,35 +66,29 @@
             </plugin>
             <!-- 打包成 .app -->
             <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>osxapp-maven-plugin</artifactId>
-                <version>1.0-alpha-2</version> <!-- 这是一个稳定的老版本，专门用于此目的 -->
-                <configuration>
-                    <!-- 指定主程序入口类 -->
-                    <mainClass>com.example.CodeReader</mainClass>
-                    <!-- 配置Info.plist文件，这是macOS应用的核心配置文件 -->
-                    <dictionary>
-                        <key>CFBundleName</key>
-                        <!-- 这里设置在菜单栏和Finder中显示的应用名称 -->
-                        <string>代码读取工具</string>
-                        <key>CFBundleDisplayName</key>
-                        <string>代码读取工具</string>
-                        <key>CFBundleIdentifier</key>
-                        <string>com.example.codereader</string>
-                        <key>CFBundleVersion</key>
-                        <string>1.0</string>
-                        <key>LSMinimumSystemVersion</key>
-                        <string>10.10</string> <!-- 兼容的最低macOS版本 -->
-                    </dictionary>
-                    <!-- 指定要打包的JAR文件，这里指向shade插件生成的结果 -->
-                    <jar>${project.build.directory}/${project.build.finalName}.jar</jar>
-                </configuration>
+                <groupId>org.panteleyev</groupId>
+                <artifactId>jpackage-maven-plugin</artifactId>
+                <version>1.5.0</version>
                 <executions>
                     <execution>
                         <phase>package</phase>
                         <goals>
-                            <goal>bundle</goal>
+                            <goal>jpackage</goal>
                         </goals>
+                        <configuration>
+                            <name>代码协作助手</name>
+                            <input>${project.build.directory}</input>
+                            <mainClass>com.lfs.CodeAssistant</mainClass>
+                            <mainJar>${project.build.finalName}.jar</mainJar>
+                            <appVersion>${project.version}</appVersion>
+                            <icon>src/main/resources/icons/app.icns</icon>
+                            <type>APP_IMAGE</type>
+                            <destination>dist</destination>
+                            <javaOptions>
+                                <option>-Dapple.laf.useScreenMenuBar=true</option>
+                                <option>-Dapple.awt.application.name=CodeAssistant</option>
+                            </javaOptions>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
