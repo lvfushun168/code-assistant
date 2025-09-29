@@ -34,7 +34,7 @@ public class MainFrame extends JFrame {
         loadWindowPreferences();
 
         // --- UI 组件创建 ---
-        JButton selectContentButton = new JButton("选择内容");
+        JButton selectContentButton = new JButton("获取代码内容");
         selectContentButton.setFont(new Font("SansSerif", Font.PLAIN, 16));
 
         JButton getStructureButton = new JButton("获取项目结构");
@@ -62,13 +62,30 @@ public class MainFrame extends JFrame {
         buttonPanel.add(Box.createRigidArea(new Dimension(0, 20)));
         buttonPanel.add(getStructureButton);
 
-        setLayout(new GridBagLayout());
+        // --- 创建左侧面板用于居中按钮 ---
+        JPanel leftPanel = new JPanel(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0;
         gbc.gridy = 0;
         gbc.anchor = GridBagConstraints.CENTER;
         gbc.fill = GridBagConstraints.NONE;
-        add(buttonPanel, gbc);
+        leftPanel.add(buttonPanel, gbc);
+
+        // --- 创建右侧文本区域 ---
+        JTextArea rightTextArea = new JTextArea();
+        rightTextArea.setEditable(true);
+        rightTextArea.setLineWrap(true);
+        rightTextArea.setWrapStyleWord(true);
+        JScrollPane rightScrollPane = new JScrollPane(rightTextArea);
+
+        // --- 创建JSplitPane ---
+        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, leftPanel, rightScrollPane);
+        splitPane.setOneTouchExpandable(true);
+        splitPane.setDividerLocation(200); // 初始分割位置
+
+        // --- 主窗口布局 ---
+        setLayout(new BorderLayout());
+        add(splitPane, BorderLayout.CENTER);
     }
 
     /**
@@ -174,7 +191,7 @@ public class MainFrame extends JFrame {
      * 从 Preferences 加载窗口的大小和位置
      */
     private void loadWindowPreferences() {
-        Rectangle bounds = preferencesService.loadWindowBounds(450, 300);
+        Rectangle bounds = preferencesService.loadWindowBounds(650, 400);
         setSize(bounds.width, bounds.height);
 
         if (bounds.x != -1 && bounds.y != -1) {
