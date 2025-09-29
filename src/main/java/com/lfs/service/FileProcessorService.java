@@ -2,7 +2,9 @@ package com.lfs.service;
 
 import com.lfs.config.AppConfig;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Arrays;
@@ -95,6 +97,19 @@ public class FileProcessorService {
                 String newPrefix = prefix + (isLast ? "    " : "│   ");
                 buildTreeStructure(file, builder, newPrefix);
             }
+        }
+    }
+
+    /**
+     * 将字符串内容保存到文件。
+     *
+     * @param content 要保存的字符串内容。
+     * @param file    要将内容保存到的文件。
+     * @throws IOException 如果发生I/O错误。
+     */
+    public void saveStringToFile(String content, File file) throws IOException {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
+            writer.write(content);
         }
     }
 }

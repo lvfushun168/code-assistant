@@ -84,21 +84,64 @@ public class MainFrame extends JFrame {
             // 在后台线程中执行处理以保持UI的响应性。
             new Thread(() -> {
                 try {
-                    String processedResult;
+                    final String processedResult;
                     if (isContentMode) {
                         processedResult = fileProcessorService.generateContentFromDirectory(selectedDirectory);
                     } else {
                         processedResult = fileProcessorService.generateStructureFromDirectory(selectedDirectory);
                     }
-                    ClipboardService.copyToClipboard(processedResult);
-                    String successMessage = isContentMode ? "内容已粘贴到剪切板" : "项目结构已粘贴到剪切板";
-                    SwingUtilities.invokeLater(() -> NotificationUtil.showSuccessDialog(this, successMessage));
+
+                    // 返回UI线程进行用户交互
+                    SwingUtilities.invokeLater(() -> {
+                        int choice = JOptionPane.showOptionDialog(this, "是否生成文件？", "确认",
+                                JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, new String[]{" 是 ", " 否 "}, "是");
+
+                        if (choice == JOptionPane.YES_OPTION) {
+                            // 用户选择保存文件
+                            JFileChooser fileChooserSave = new JFileChooser();
+                            fileChooserSave.setDialogTitle("选择保存目录");
+                            fileChooserSave.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+                            fileChooserSave.setCurrentDirectory(preferencesService.getLastDirectory()); // 使用上次的目录
+
+                            int saveResult = fileChooserSave.showSaveDialog(this);
+                            if (saveResult == JFileChooser.APPROVE_OPTION) {
+                                File saveDir = fileChooserSave.getSelectedFile();
+                                String fileName = isContentMode ? "code.txt" : "structure.txt";
+                                File outputFile = new File(saveDir, fileName);
+
+                                // 在工作线程中执行文件写入
+                                new Thread(() -> {
+                                    try {
+                                        fileProcessorService.saveStringToFile(processedResult, outputFile);
+                                        SwingUtilities.invokeLater(() -> NotificationUtil.showSuccessDialog(this, "文件已保存到: " + outputFile.getAbsolutePath()));
+                                    } catch (Exception ex) {
+                                        SwingUtilities.invokeLater(() -> NotificationUtil.showErrorDialog(this, "保存文件时出错: " + ex.getMessage()));
+                                        ex.printStackTrace();
+                                    } finally {
+                                        setCursor(Cursor.getDefaultCursor());
+                                    }
+                                }).start();
+                            } else {
+                                // 用户取消了保存
+                                setCursor(Cursor.getDefaultCursor());
+                            }
+                        } else {
+                            // 用户选择不保存文件，则复制到剪贴板
+                            ClipboardService.copyToClipboard(processedResult);
+                            String successMessage = isContentMode ? "内容已粘贴到剪切板" : "项目结构已粘贴到剪切板";
+                            NotificationUtil.showSuccessDialog(this, successMessage);
+                            setCursor(Cursor.getDefaultCursor());
+                        }
+                    });
+
                 } catch (Exception ex) {
-                    SwingUtilities.invokeLater(() -> NotificationUtil.showErrorDialog(this, "处理时发生错误: " + ex.getMessage()));
-                    ex.printStackTrace(); // Log the error for debugging
-                } finally {
-                     SwingUtilities.invokeLater(() -> setCursor(Cursor.getDefaultCursor()));
+                    SwingUtilities.invokeLater(() -> {
+                        NotificationUtil.showErrorDialog(this, "处理时发生错误: " + ex.getMessage());
+                        setCursor(Cursor.getDefaultCursor());
+                    });
+                    ex.printStackTrace();
                 }
+                // finally 块被移到各个分支内部，以确保光标在正确的时间恢复
             }).start();
         }
     }
