@@ -4,6 +4,7 @@ import com.lfs.service.ClipboardService;
 import com.lfs.service.FileProcessorService;
 import com.lfs.service.UserPreferencesService;
 import com.lfs.util.NotificationUtil;
+import org.apache.commons.lang3.StringUtils;
 
 import javax.swing.*;
 import java.awt.*;
@@ -113,6 +114,11 @@ public class MainFrame extends JFrame {
     }
 
     private void onSaveAs() {
+        String text = rightTextArea.getText();
+        if (StringUtils.isEmpty(text)) {
+            NotificationUtil.showErrorDialog(this, "文件内容为空");
+            return;
+        }
         String[] options = {"云端", "本地"};
         int choice = JOptionPane.showOptionDialog(this, "请选择保存方式", "保存",
                 JOptionPane.YES_NO_OPTION, JOptionPane.PLAIN_MESSAGE, null, options, options[1]);
@@ -136,7 +142,7 @@ public class MainFrame extends JFrame {
                 }
 
                 try {
-                    fileProcessorService.saveStringToFile(rightTextArea.getText(), fileToSave);
+                    fileProcessorService.saveStringToFile(text, fileToSave);
                     NotificationUtil.showSuccessDialog(this, "文件已保存到: " + fileToSave.getAbsolutePath());
                 } catch (Exception ex) {
                     NotificationUtil.showErrorDialog(this, "保存文件时出错: " + ex.getMessage());
