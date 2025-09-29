@@ -87,10 +87,9 @@ public class MainFrame extends JFrame {
         JMenuBar menuBar = new JMenuBar();
 
         // --- 创建“保存”菜单 ---
-        JMenu saveMenu = new JMenu("保存");
-        JMenuItem saveAsItem = new JMenuItem("另存为...");
-        saveAsItem.addActionListener(e -> onSaveAs());
-        saveMenu.add(saveAsItem);
+        JMenuItem saveMenu = new JMenuItem("保存");
+        saveMenu.addActionListener(e -> onSaveAs());
+        saveMenu.setMaximumSize(new Dimension(saveMenu.getPreferredSize().width, saveMenu.getPreferredSize().height));
 
         // --- 创建“导入”菜单 ---
         JMenu importMenu = new JMenu("导入");
@@ -154,6 +153,7 @@ public class MainFrame extends JFrame {
     private void onProcessDirectory(boolean isContentMode) {
         String dialogTitle = isContentMode ? "请选择一个项目文件夹以读取内容" : "请选择一个项目文件夹以获取结构";
         JFileChooser fileChooser = createConfiguredFileChooser(dialogTitle);
+        fileChooser.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("Directory", "dir"));
         int result = fileChooser.showOpenDialog(this);
 
         if (result == JFileChooser.APPROVE_OPTION) {
