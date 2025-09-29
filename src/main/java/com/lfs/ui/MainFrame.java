@@ -10,12 +10,14 @@ import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
+import java.io.File;
 
 /**
  * 主框架显示UI
  */
 public class MainFrame extends JFrame {
 
+    private JTextArea rightTextArea;
     private final FileProcessorService fileProcessorService;
     private final UserPreferencesService preferencesService;
 
@@ -77,6 +79,7 @@ public class MainFrame extends JFrame {
         rightTextArea.setLineWrap(true);
         rightTextArea.setWrapStyleWord(true);
         JScrollPane rightScrollPane = new JScrollPane(rightTextArea);
+        this.rightTextArea = rightTextArea;
 
         // --- 创建JSplitPane ---
         JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, leftPanel, rightScrollPane);
@@ -86,6 +89,59 @@ public class MainFrame extends JFrame {
         // --- 主窗口布局 ---
         setLayout(new BorderLayout());
         add(splitPane, BorderLayout.CENTER);
+
+        // --- 创建菜单栏 ---
+        JMenuBar menuBar = new JMenuBar();
+
+        // --- 创建“保存”菜单 ---
+        JMenu saveMenu = new JMenu("保存");
+        JMenuItem saveAsItem = new JMenuItem("另存为...");
+        saveAsItem.addActionListener(e -> onSaveAs());
+        saveMenu.add(saveAsItem);
+
+        // --- 创建“导入”菜单 ---
+        JMenu importMenu = new JMenu("导入");
+
+        // --- 将菜单添加到菜单栏 ---
+        menuBar.add(saveMenu);
+        menuBar.add(importMenu);
+
+        // --- 设置窗口的菜单栏 ---
+        setJMenuBar(menuBar);
+    }
+
+    private void onSaveAs() {
+        String[] options = {"云端", "本地"};
+        int choice = JOptionPane.showOptionDialog(this, "请选择保存方式", "保存",
+                JOptionPane.YES_NO_OPTION, JOptionPane.PLAIN_MESSAGE, null, options, options[1]);
+
+        if (choice == 1) { // 本地
+            JFileChooser fileChooser = new JFileChooser();
+            fileChooser.setDialogTitle("选择保存目录");
+            fileChooser.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("Text Files (*.txt)", "txt"));
+            fileChooser.addChoosableFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("Markdown Files (*.md)", "md"));
+            fileChooser.addChoosableFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("YAML Files (*.yml)", "yml"));
+            fileChooser.addChoosableFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("XML Files (*.xml)", "xml"));
+
+            int userSelection = fileChooser.showSaveDialog(this);
+
+            if (userSelection == JFileChooser.APPROVE_OPTION) {
+                File fileToSave = fileChooser.getSelectedFile();
+                String filePath = fileToSave.getAbsolutePath();
+                if (!filePath.endsWith("." + ((javax.swing.filechooser.FileNameExtensionFilter) fileChooser.getFileFilter()).getExtensions()[0])) {
+                    filePath += "." + ((javax.swing.filechooser.FileNameExtensionFilter) fileChooser.getFileFilter()).getExtensions()[0];
+                    fileToSave = new File(filePath);
+                }
+
+                try {
+                    fileProcessorService.saveStringToFile(rightTextArea.getText(), fileToSave);
+                    NotificationUtil.showSuccessDialog(this, "文件已保存到: " + fileToSave.getAbsolutePath());
+                } catch (Exception ex) {
+                    NotificationUtil.showErrorDialog(this, "保存文件时出错: " + ex.getMessage());
+                    ex.printStackTrace();
+                }
+            }
+        }
     }
 
     /**
