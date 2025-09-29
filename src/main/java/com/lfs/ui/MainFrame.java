@@ -116,7 +116,7 @@ public class MainFrame extends JFrame {
     private void onSaveAs() {
         String text = rightTextArea.getText();
         if (StringUtils.isEmpty(text)) {
-            NotificationUtil.showErrorDialog(this, "文件内容为空");
+            NotificationUtil.showErrorDialog(this, "内容为空");
             return;
         }
         String[] options = {"云端", "本地"};
@@ -256,13 +256,16 @@ public class MainFrame extends JFrame {
      * 从 Preferences 加载窗口的大小和位置
      */
     private void loadWindowPreferences() {
-        Rectangle bounds = preferencesService.loadWindowBounds(650, 400);
-        setSize(bounds.width, bounds.height);
-
-        if (bounds.x != -1 && bounds.y != -1) {
-            setLocation(bounds.x, bounds.y);
+        Rectangle bounds = preferencesService.loadWindowBounds();
+        if (bounds != null && bounds.width > 0 && bounds.height > 0) {
+            setBounds(bounds);
         } else {
-            setLocationRelativeTo(null); // 如果没有保存的位置，则居中
+            // 首次打开时，设置窗口大小为屏幕的3/5，并居中
+            Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+            int width = screenSize.width * 3 / 5;
+            int height = screenSize.height * 3 / 5;
+            setSize(width, height);
+            setLocationRelativeTo(null); // 居中
         }
     }
 }

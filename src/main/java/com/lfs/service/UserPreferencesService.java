@@ -11,7 +11,7 @@ public class UserPreferencesService {
 
     private final Preferences prefs;
 
-    // Keys for storing preferences.
+    // 用于存储首选项
     private static final String LAST_DIRECTORY_KEY = "lastDirectory";
     private static final String WINDOW_X_KEY = "windowX";
     private static final String WINDOW_Y_KEY = "windowY";
@@ -19,13 +19,13 @@ public class UserPreferencesService {
     private static final String WINDOW_HEIGHT_KEY = "windowHeight";
 
     public UserPreferencesService() {
-        // Using the userNodeForPackage ensures preferences are stored on a per-user basis for this app.
+        // 使用 userNodeForPackage 确保偏好设置按用户存储
         this.prefs = Preferences.userNodeForPackage(UserPreferencesService.class);
     }
 
     /**
-     * Saves the last selected directory path.
-     * @param directory The directory to save.
+     * 保存上次选择的目录路径。
+     * @param directory 保存的目录
      */
     public void saveLastDirectory(File directory) {
         if (directory != null) {
@@ -34,8 +34,8 @@ public class UserPreferencesService {
     }
 
     /**
-     * Retrieves the last used directory.
-     * @return A File object for the last directory, or null if not set.
+     * 检索上次使用的目录
+     * @return 最后一个目录的 File 对象，如果未设置，则为 null。
      */
     public File getLastDirectory() {
         String lastDirPath = prefs.get(LAST_DIRECTORY_KEY, null);
@@ -49,8 +49,8 @@ public class UserPreferencesService {
     }
 
     /**
-     * Saves the main window's position and size.
-     * @param bounds The Rectangle representing the window's bounds.
+     * 保存主窗口的位置和大小
+     * @param bounds 表示窗口边界的 Rectangle
      */
     public void saveWindowBounds(Rectangle bounds) {
         prefs.putInt(WINDOW_X_KEY, bounds.x);
@@ -60,14 +60,26 @@ public class UserPreferencesService {
     }
 
     /**
-     * Loads the window's last saved bounds.
-     * @param defaultWidth The default width to use if no value is saved.
-     * @param defaultHeight The default height to use if no value is saved.
-     * @return A Rectangle with the saved or default bounds.
+     * 加载窗口上次保存的边界。
+     * @param defaultWidth 如果未保存值，则使用默认宽度。
+     * @param defaultHeight 如果未保存值，则使用默认高度。
+     * @return 一个 Rectangle 对象，包含保存的或默认的边界。
      */
     public Rectangle loadWindowBounds(int defaultWidth, int defaultHeight) {
         int width = prefs.getInt(WINDOW_WIDTH_KEY, defaultWidth);
         int height = prefs.getInt(WINDOW_HEIGHT_KEY, defaultHeight);
+        int x = prefs.getInt(WINDOW_X_KEY, -1);
+        int y = prefs.getInt(WINDOW_Y_KEY, -1);
+        return new Rectangle(x, y, width, height);
+    }
+
+    /**
+     * 加载窗口上次保存的边界。
+     * @return 一个保存了边界的 Rectangle，如果未设置，则返回一个零维度的 Rectangle。
+     */
+    public Rectangle loadWindowBounds() {
+        int width = prefs.getInt(WINDOW_WIDTH_KEY, 0);
+        int height = prefs.getInt(WINDOW_HEIGHT_KEY, 0);
         int x = prefs.getInt(WINDOW_X_KEY, -1);
         int y = prefs.getInt(WINDOW_Y_KEY, -1);
         return new Rectangle(x, y, width, height);
