@@ -23,14 +23,6 @@
         </dependency>
     </dependencies>
 
-<!--    <pluginRepositories>-->
-<!--        <pluginRepository>-->
-<!--            <id>central</id>-->
-<!--            <name>Maven Central Repository</name>-->
-<!--            <url>https://repo.maven.apache.org/maven2</url>-->
-<!--        </pluginRepository>-->
-<!--    </pluginRepositories>-->
-
     <build>
         <plugins>
             <!-- Maven Compiler Plugin, 确保使用 Java 11进行编译 -->
