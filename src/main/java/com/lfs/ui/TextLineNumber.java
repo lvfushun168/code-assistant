@@ -75,9 +75,9 @@ public class TextLineNumber extends JComponent implements DocumentListener, Care
     }
 
     /**
-     *  Gets the updateFont property
+     *  获取 updateFont 属性
      *
-     *  @return the updateFont property
+     *  @return updateFont 属性
      */
     public boolean getUpdateFont()
     {
@@ -85,10 +85,10 @@ public class TextLineNumber extends JComponent implements DocumentListener, Care
     }
 
     /**
-     *  Set the updateFont property. Indicates whether this component should
-     *  update its font when the font of the related text component is changed.
+     *  设置 updateFont 属性。指示此组件是否应
+     *  在相关文本组件的字体更改时更新其字体。
      *
-     *  @param updateFont  when true update the font
+     *  @param updateFont  为 true 时更新字体
      */
     public void setUpdateFont(boolean updateFont)
     {
@@ -96,9 +96,9 @@ public class TextLineNumber extends JComponent implements DocumentListener, Care
     }
 
     /**
-     *  Gets the border gap
+     *  获取边框间隙
      *
-     *  @return the border gap in pixels
+     *  @return 边框间隙（以像素为单位）
      */
     public int getBorderGap()
     {
@@ -106,10 +106,10 @@ public class TextLineNumber extends JComponent implements DocumentListener, Care
     }
 
     /**
-     *  The border gap is used in calculating the left and right insets of the
-     *  border. Default value is 5.
+     *  边框间隙用于计算
+     *  边框的左右内边距。默认值为 5。
      *
-     *  @param borderGap  the gap in pixels
+     *  @param borderGap  间隙（以像素为单位）
      */
     public void setBorderGap(int borderGap)
     {
@@ -121,9 +121,9 @@ public class TextLineNumber extends JComponent implements DocumentListener, Care
     }
 
     /**
-     *  Gets the current line rendering Color
+     *  获取当前行渲染颜色
      *
-     *  @return the Color used to render the current line number
+     *  @return 用于渲染当前行号的颜色
      */
     public Color getCurrentLineForeground()
     {
@@ -131,9 +131,9 @@ public class TextLineNumber extends JComponent implements DocumentListener, Care
     }
 
     /**
-     *  The Color used to render the current line number. Default value is Color.RED.
+     *  用于渲染当前行号的颜色。默认值为 Color.RED。
      *
-     *  @param currentLineForeground  the Color used to render the current line
+     *  @param currentLineForeground  用于渲染当前行的颜色
      */
     public void setCurrentLineForeground(Color currentLineForeground)
     {
@@ -141,9 +141,9 @@ public class TextLineNumber extends JComponent implements DocumentListener, Care
     }
 
     /**
-     *  Gets the digit alignment
+     *  获取数字对齐方式
      *
-     *  @return the alignment of the painted digits
+     *  @return 绘制数字的对齐方式
      */
     public float getDigitAlignment()
     {
@@ -151,25 +151,24 @@ public class TextLineNumber extends JComponent implements DocumentListener, Care
     }
 
     /**
-     *  Specify the horizontal alignment of the digits within the component.
-     *  Common values would be:
+     *  指定组件内数字的水平对齐方式。
+     *  常见值为：
      *  <ul>
      *  <li>TextLineNumber.LEFT
      *  <li>TextLineNumber.CENTER
-     *  <li>TextLineNumber.RIGHT (default)
+     *  <li>TextLineNumber.RIGHT (默认)
      *	</ul>
-     *  @param digitAlignment  the alignment of the digits
+     *  @param digitAlignment  数字的对齐方式
      */
     public void setDigitAlignment(float digitAlignment)
     {
-        this.digitAlignment =
-                digitAlignment > 1.0f ? 1.0f : digitAlignment < 0.0f ? -1.0f : digitAlignment;
+        this.digitAlignment = digitAlignment > 1.0f ? 1.0f : digitAlignment < 0.0f ? -1.0f : digitAlignment;
     }
 
     /**
-     *  Gets the minimum display digits
+     *  获取最小显示位数
      *
-     *  @return the minimum display digits
+     *  @return 最小显示位数
      */
     public int getMinimumDisplayDigits()
     {
@@ -177,10 +176,10 @@ public class TextLineNumber extends JComponent implements DocumentListener, Care
     }
 
     /**
-     *  Specify the minimum number of digits used to calculate the preferred
-     *  width of the component. Default value is 3.
+     *  指定用于计算组件首选宽度的
+     *  最小位数。默认值为 3。
      *
-     *  @param minimumDisplayDigits  the number of digits
+     *  @param minimumDisplayDigits  位数
      */
     public void setMinimumDisplayDigits(int minimumDisplayDigits)
     {
@@ -189,7 +188,7 @@ public class TextLineNumber extends JComponent implements DocumentListener, Care
     }
 
     /**
-     *  Calculate the width needed to display the maximum line number
+     *  计算显示最大行号所需的宽度
      */
     private void setPreferredWidth()
     {
@@ -197,7 +196,7 @@ public class TextLineNumber extends JComponent implements DocumentListener, Care
         int lines = root.getElementCount();
         int digits = Math.max(String.valueOf(lines).length(), minimumDisplayDigits);
 
-        //  Update sizes when number of digits in the line number changes
+        //  当行号中的位数发生变化时更新大小
 
         if (lastDigits != digits)
         {
@@ -215,20 +214,20 @@ public class TextLineNumber extends JComponent implements DocumentListener, Care
     }
 
     /**
-     *  Draw the line numbers
+     *  绘制行号
      */
     @Override
     public void paintComponent(Graphics g)
     {
         super.paintComponent(g);
 
-        //	Determine the width of the space available to draw our numbers
+        //	确定可用于绘制数字的空间宽度
 
         FontMetrics fontMetrics = component.getFontMetrics( component.getFont() );
         Insets insets = getInsets();
         int availableWidth = getSize().width - insets.left - insets.right;
 
-        //  Determine the rows to draw within the clipped bounds.
+        //  确定在裁剪边界内要绘制的行。
 
         Rectangle clip = g.getClipBounds();
         int rowStartOffset = component.viewToModel( new Point(0, clip.y) );
@@ -243,8 +242,8 @@ public class TextLineNumber extends JComponent implements DocumentListener, Care
                 else
                     g.setColor( getForeground() );
 
-                //  Get the line number as a string and then determine the
-                //  position to draw the string.
+                //  获取行号作为字符串，然后确定
+                //  绘制字符串的位置。
 
                 String lineNumber = getTextLineNumber(rowStartOffset);
                 int stringWidth = fontMetrics.stringWidth( lineNumber );
@@ -252,7 +251,7 @@ public class TextLineNumber extends JComponent implements DocumentListener, Care
                 int y = getOffsetY(rowStartOffset, fontMetrics);
                 g.drawString(lineNumber, x, y);
 
-                //  Move to the next row
+                //  移动到下一行
 
                 rowStartOffset = Utilities.getRowEnd(component, rowStartOffset) + 1;
             }
@@ -261,8 +260,8 @@ public class TextLineNumber extends JComponent implements DocumentListener, Care
     }
 
     /*
-     *  We need to know if the caret is currently positioned on the line we
-     *  are about to paint so the line number can be highlighted.
+     *  我们需要知道光标当前是否位于我们
+     *  要绘制的行上，以便可以突出显示行号。
      */
     private boolean isCurrentLine(int rowStartOffset)
     {
@@ -275,8 +274,8 @@ public class TextLineNumber extends JComponent implements DocumentListener, Care
     }
 
     /**
-     *	Get the line number to be drawn. The line number is guaranteed to
-     *  be formatted with leading zeros.
+     *	获取要绘制的行号。保证行号
+     *  用前导零格式化。
      */
     protected String getTextLineNumber(int rowStartOffset)
     {
@@ -291,7 +290,7 @@ public class TextLineNumber extends JComponent implements DocumentListener, Care
     }
 
     /*
-     *  Determine the X offset to properly align the line number when drawn
+     *  确定 X 偏移量以在绘制时正确对齐行号
      */
     private int getOffsetX(int availableWidth, int stringWidth)
     {
@@ -299,25 +298,25 @@ public class TextLineNumber extends JComponent implements DocumentListener, Care
     }
 
     /*
-     *  Determine the Y offset for the current row
+     *  确定当前行的 Y 偏移量
      */
     private int getOffsetY(int rowStartOffset, FontMetrics fontMetrics) throws BadLocationException
     {
-        //  Get the bounding rectangle of the row
+        //  获取行的边界矩形
 
         Rectangle r = component.modelToView( rowStartOffset );
         int lineHeight = fontMetrics.getHeight();
         int y = r.y + r.height;
         int descent = 0;
 
-        //  The text needs to be positioned above the bottom of the bounding
-        //  rectangle based on the descent of the font.
+        //  文本需要根据字体的下降高度
+        //  定位在边界矩形的底部之上。
 
-        if (r.height == lineHeight)  // default font is being used
+        if (r.height == lineHeight)  // 正在使用默认字体
         {
             descent = fontMetrics.getDescent();
         }
-        else  // We need to check all the attributes for font changes
+        else  // 我们需要检查所有属性以查找字体更改
         {
             if (fonts == null)
                 fonts = new HashMap<String, FontMetrics>();
@@ -351,7 +350,7 @@ public class TextLineNumber extends JComponent implements DocumentListener, Care
     }
 
     //
-//  Implement DocumentListener interface
+//  实现 DocumentListener 接口
 //
     @Override
     public void insertUpdate(DocumentEvent e)
@@ -382,13 +381,13 @@ public class TextLineNumber extends JComponent implements DocumentListener, Care
     }
 
     /*
-     *  A document change may affect the number of displayed lines of text.
-     *  Therefore the lines numbers will also change.
+     *  文档更改可能会影响显示的文本行数。
+     *  因此，行号也会更改。
      */
     private void documentChanged()
     {
-        //  View of the component has not been updated at the time
-        //  the DocumentEvent is fired
+        //  在触发 DocumentEvent 时，
+        //  组件的视图尚未更新
 
         SwingUtilities.invokeLater( () ->
         {
@@ -406,19 +405,19 @@ public class TextLineNumber extends JComponent implements DocumentListener, Care
     }
 
     //
-//  Implement CaretListener interface
+//  实现 CaretListener 接口
 //
     @Override
     public void caretUpdate(CaretEvent e)
     {
-        //  Get the line the caret is positioned on
+        //  获取光标所在行
 
         int caretPosition = component.getCaretPosition();
         Element root = component.getDocument().getDefaultRootElement();
         int currentLine = root.getElementIndex( caretPosition );
 
-        //  Need to repaint so the correct line number can be highlighted
-        //  and of course the lines numbers may have shifted
+        //  需要重绘，以便可以突出显示正确的行号
+        //  当然，行号可能已经移动
 
         if (lastLine != currentLine)
         {
@@ -428,7 +427,7 @@ public class TextLineNumber extends JComponent implements DocumentListener, Care
     }
 
     //
-//  Implement PropertyChangeListener interface
+//  实现 PropertyChangeListener 接口
 //
     @Override
     public void propertyChange(PropertyChangeEvent evt)
