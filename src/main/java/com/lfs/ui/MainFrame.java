@@ -74,11 +74,13 @@ public class MainFrame extends JFrame {
         leftPanel.add(buttonPanel, gbc);
 
         // --- 创建右侧文本区域 ---
-        JTextArea rightTextArea = new JTextArea();
+        rightTextArea = new JTextArea();
         rightTextArea.setEditable(true);
-        rightTextArea.setLineWrap(true);
-        rightTextArea.setWrapStyleWord(true);
+//        rightTextArea.setLineWrap(true);
+//        rightTextArea.setWrapStyleWord(true);
         JScrollPane rightScrollPane = new JScrollPane(rightTextArea);
+        TextLineNumber tln = new TextLineNumber(rightTextArea);
+        rightScrollPane.setRowHeaderView( tln );
         this.rightTextArea = rightTextArea;
 
         // --- 创建右侧面板 ---
@@ -116,7 +118,7 @@ public class MainFrame extends JFrame {
     private void onSaveAs() {
         String text = rightTextArea.getText();
         if (StringUtils.isEmpty(text)) {
-            NotificationUtil.showErrorDialog(this, "内容为空");
+            NotificationUtil.showErrorDialog(this, "内容为空,无法保存!");
             return;
         }
         String[] options = {"云端", "本地"};
