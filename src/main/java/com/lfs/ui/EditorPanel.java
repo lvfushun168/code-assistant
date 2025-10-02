@@ -32,6 +32,12 @@ public class EditorPanel extends JPanel {
 
         // --- 创建“项目”菜单 ---
         JMenu project = new JMenu("<html><u>项目</u></html>");
+        JMenuItem getContentMenuItem = new JMenuItem("获取代码内容");
+        getContentMenuItem.addActionListener(e -> controller.onProcessDirectory(true));
+        project.add(getContentMenuItem);
+        JMenuItem getStructureMenuItem = new JMenuItem("获取项目结构");
+        getStructureMenuItem.addActionListener(e -> controller.onProcessDirectory(false));
+        project.add(getStructureMenuItem);
 
         // --- 创建“保存”菜单 ---
         JMenu saveMenu = new JMenu("<html><u>保存</u></html>");
