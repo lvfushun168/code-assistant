@@ -7,6 +7,8 @@ import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 
+import java.io.File;
+
 /**
  * 主框架显示UI
  */
@@ -15,7 +17,7 @@ public class MainFrame extends JFrame {
     private final UserPreferencesService preferencesService;
     private MainFrameController controller;
     private EditorPanel editorPanel;
-    private ActionPanel actionPanel;
+    private FileExplorerPanel fileExplorerPanel;
 
 
     public MainFrame() {
@@ -32,16 +34,15 @@ public class MainFrame extends JFrame {
         loadWindowPreferences();
 
         // --- 初始化 MVC 组件 ---
-        // To break the circular dependency between controller and editorPanel,
-        // we instantiate the panel first, then the controller, and then link them.
-        this.controller = new MainFrameController(this, null); // Pass null temporarily
+        this.controller = new MainFrameController(this, null);
         this.editorPanel = new EditorPanel(this.controller);
-        this.controller.setEditorPanel(this.editorPanel); // Set the correct panel instance on the controller
-        this.actionPanel = new ActionPanel(this.controller);
+        this.controller.setEditorPanel(this.editorPanel);
+        String desktopPath = System.getProperty("user.home") + File.separator + "Desktop";
+        this.fileExplorerPanel = new FileExplorerPanel(desktopPath);
 
 
         // --- 创建JSplitPane ---
-        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, actionPanel, editorPanel);
+        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, fileExplorerPanel, editorPanel);
         splitPane.setOneTouchExpandable(true);
         splitPane.setDividerLocation(200); // 初始分割位置
 
