@@ -36,9 +36,8 @@ public class MainFrame extends JFrame {
         // --- 初始化 MVC 组件 ---
         this.controller = new MainFrameController(this, null);
         this.editorPanel = new EditorPanel(this.controller);
-        this.controller.setEditorPanel(this.editorPanel);
-        String desktopPath = System.getProperty("user.home") + File.separator + "Desktop";
-        this.fileExplorerPanel = new FileExplorerPanel(desktopPath);
+        this.controller.setEditorPanel(this.editorPanel); // Set the correct panel instance on the controller
+        this.fileExplorerPanel = new FileExplorerPanel();
 
 
         // --- 创建JSplitPane ---
