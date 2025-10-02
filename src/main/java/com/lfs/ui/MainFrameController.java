@@ -1,0 +1,168 @@
+package com.lfs.ui;
+
+import com.lfs.service.ClipboardService;
+import com.lfs.service.FileProcessorService;
+import com.lfs.service.UserPreferencesService;
+import com.lfs.util.NotificationUtil;
+
+import javax.swing.*;
+import java.awt.*;
+import java.io.File;
+
+public class MainFrameController {
+
+    private final FileProcessorService fileProcessorService;
+    private final UserPreferencesService preferencesService;
+    private final MainFrame mainFrame;
+    private EditorPanel editorPanel;
+
+    public MainFrameController(MainFrame mainFrame, EditorPanel editorPanel) {
+        this.mainFrame = mainFrame;
+        this.editorPanel = editorPanel;
+        this.fileProcessorService = new FileProcessorService();
+        this.preferencesService = new UserPreferencesService();
+    }
+
+    public void setEditorPanel(EditorPanel editorPanel) {
+        this.editorPanel = editorPanel;
+    }
+
+    /**
+     * 处理“获取内容”和“获取结构”按钮点击的逻辑。
+     * @param isContentMode 获取内容时为true，获取结构时为false。
+     */
+    public void onProcessDirectory(boolean isContentMode) {
+        String dialogTitle = isContentMode ? "请选择一个项目文件夹以读取内容" : "请选择一个项目文件夹以获取结构";
+        JFileChooser fileChooser = createConfiguredFileChooser(dialogTitle);
+        fileChooser.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("Directory", "dir"));
+        int result = fileChooser.showOpenDialog(mainFrame);
+
+        if (result == JFileChooser.APPROVE_OPTION) {
+            File selectedDirectory = fileChooser.getSelectedFile();
+            preferencesService.saveLastDirectory(selectedDirectory);
+
+            // 显示加载指示器（可选，但有利于用户体验）
+            mainFrame.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+
+            // 在后台线程中执行处理以保持UI的响应性。
+            new Thread(() -> {
+                try {
+                    final String processedResult;
+                    if (isContentMode) {
+                        processedResult = fileProcessorService.generateContentFromDirectory(selectedDirectory);
+                    } else {
+                        processedResult = fileProcessorService.generateStructureFromDirectory(selectedDirectory);
+                    }
+
+                    // 返回UI线程进行用户交互
+                    SwingUtilities.invokeLater(() -> {
+                        int choice = JOptionPane.showOptionDialog(mainFrame, "是否生成文件？", "确认",
+                                JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, new String[]{" 是 ", " 否 "}, "是");
+
+                        if (choice == JOptionPane.YES_OPTION) {
+                            // 用户选择保存文件
+                            JFileChooser fileChooserSave = new JFileChooser();
+                            fileChooserSave.setDialogTitle("选择保存目录");
+                            fileChooserSave.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+                            fileChooserSave.setCurrentDirectory(preferencesService.getLastDirectory()); // 使用上次的目录
+
+                            int saveResult = fileChooserSave.showSaveDialog(mainFrame);
+                            if (saveResult == JFileChooser.APPROVE_OPTION) {
+                                File saveDir = fileChooserSave.getSelectedFile();
+                                String fileName = isContentMode ? "code.txt" : "structure.txt";
+                                File outputFile = new File(saveDir, fileName);
+
+                                // 在工作线程中执行文件写入
+                                new Thread(() -> {
+                                    try {
+                                        fileProcessorService.saveStringToFile(processedResult, outputFile);
+                                        SwingUtilities.invokeLater(() -> NotificationUtil.showSuccessDialog(mainFrame, "文件已保存到: " + outputFile.getAbsolutePath()));
+                                    } catch (Exception ex) {
+                                        SwingUtilities.invokeLater(() -> NotificationUtil.showErrorDialog(mainFrame, "保存文件时出错: " + ex.getMessage()));
+                                        ex.printStackTrace();
+                                    } finally {
+                                        mainFrame.setCursor(Cursor.getDefaultCursor());
+                                    }
+                                }).start();
+                            } else {
+                                // 用户取消了保存
+                                mainFrame.setCursor(Cursor.getDefaultCursor());
+                            }
+                        } else {
+                            // 用户选择不保存文件，则复制到剪贴板
+                            ClipboardService.copyToClipboard(processedResult);
+                            String successMessage = isContentMode ? "内容已粘贴到剪切板" : "项目结构已粘贴到剪切板";
+                            NotificationUtil.showSuccessDialog(mainFrame, successMessage);
+                            mainFrame.setCursor(Cursor.getDefaultCursor());
+                        }
+                    });
+
+                } catch (Exception ex) {
+                    SwingUtilities.invokeLater(() -> {
+                        NotificationUtil.showErrorDialog(mainFrame, "处理时发生错误: " + ex.getMessage());
+                        mainFrame.setCursor(Cursor.getDefaultCursor());
+                    });
+                    ex.printStackTrace();
+                }
+                // finally 块被移到各个分支内部，以确保光标在正确的时间恢复
+            }).start();
+        }
+    }
+
+    public void onSaveAs() {
+        String text = editorPanel.getTextAreaContent();
+        if (text == null || text.trim().isEmpty()) {
+            NotificationUtil.showErrorDialog(mainFrame, "内容为空,无法保存!");
+            return;
+        }
+        String[] options = {"云端", "本地"};
+        int choice = JOptionPane.showOptionDialog(mainFrame, "请选择保存方式", "保存",
+                JOptionPane.YES_NO_OPTION, JOptionPane.PLAIN_MESSAGE, null, options, options[1]);
+
+        if (choice == 1) { // 本地
+            JFileChooser fileChooser = new JFileChooser();
+            fileChooser.setDialogTitle("选择保存目录");
+            fileChooser.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("Text Files (*.txt)", "txt"));
+            fileChooser.addChoosableFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("Markdown Files (*.md)", "md"));
+            fileChooser.addChoosableFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("YAML Files (*.yml)", "yml"));
+            fileChooser.addChoosableFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("XML Files (*.xml)", "xml"));
+
+            int userSelection = fileChooser.showSaveDialog(mainFrame);
+
+            if (userSelection == JFileChooser.APPROVE_OPTION) {
+                File fileToSave = fileChooser.getSelectedFile();
+                String filePath = fileToSave.getAbsolutePath();
+                if (!filePath.endsWith("." + ((javax.swing.filechooser.FileNameExtensionFilter) fileChooser.getFileFilter()).getExtensions()[0])) {
+                    filePath += "." + ((javax.swing.filechooser.FileNameExtensionFilter) fileChooser.getFileFilter()).getExtensions()[0];
+                    fileToSave = new File(filePath);
+                }
+
+                try {
+                    fileProcessorService.saveStringToFile(text, fileToSave);
+                    NotificationUtil.showSuccessDialog(mainFrame, "文件已保存到: " + fileToSave.getAbsolutePath());
+                } catch (Exception ex) {
+                    NotificationUtil.showErrorDialog(mainFrame, "保存文件时出错: " + ex.getMessage());
+                    ex.printStackTrace();
+                }
+            }
+        }
+    }
+
+    /**
+     * 创建并配置一个JFileChooser实例。
+     * @param dialogTitle 对话框标题
+     * @return 配置好的 JFileChooser 实例
+     */
+    private JFileChooser createConfiguredFileChooser(String dialogTitle) {
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+        fileChooser.setDialogTitle(dialogTitle);
+        fileChooser.setFileHidingEnabled(false); // Show hidden files
+
+        File lastDir = preferencesService.getLastDirectory();
+        if (lastDir != null) {
+            fileChooser.setCurrentDirectory(lastDir);
+        }
+        return fileChooser;
+    }
+}
