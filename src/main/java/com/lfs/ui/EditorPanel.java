@@ -28,18 +28,19 @@ public class EditorPanel extends JPanel {
 
         // --- 创建菜单栏 ---
         JMenuBar menuBar = new JMenuBar();
+        menuBar.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, Color.LIGHT_GRAY));
 
         // --- 创建“项目”菜单 ---
-        JMenu project = new JMenu("项目...");
+        JMenu project = new JMenu("<html><u>项目</u></html>");
 
         // --- 创建“保存”菜单 ---
-        JMenu saveMenu = new JMenu("保存...");
+        JMenu saveMenu = new JMenu("<html><u>保存</u></html>");
         JMenuItem saveMenuItem = new JMenuItem("保存到本地");
         saveMenuItem.addActionListener(e -> controller.onSaveAs());
         saveMenu.add(saveMenuItem);
 
         // --- 创建“导入”菜单 ---
-        JMenu importMenu = new JMenu("导入...");
+        JMenu importMenu = new JMenu("<html><u>导入</u></html>");
 
         // --- 将菜单添加到菜单栏 ---
         menuBar.add(project);
