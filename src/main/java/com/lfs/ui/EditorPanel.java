@@ -41,8 +41,10 @@ public class EditorPanel extends JPanel {
 
         // --- 创建“保存”菜单 ---
         JMenu saveMenu = new JMenu("<html><u>保存</u></html>");
-        JMenuItem saveMenuItem = new JMenuItem("保存到本地");
-        saveMenuItem.addActionListener(e -> controller.onSaveAs());
+        JMenuItem saveAsMenuItem = new JMenuItem("另存为...");
+        saveAsMenuItem.addActionListener(e -> controller.onSaveAs());
+        saveMenu.add(saveAsMenuItem);
+        JMenuItem saveMenuItem = new JMenuItem("保存");
         saveMenu.add(saveMenuItem);
 
         // --- 创建“导入”菜单 ---
