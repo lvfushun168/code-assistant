@@ -8,6 +8,7 @@ import com.lfs.util.NotificationUtil;
 import javax.swing.*;
 import java.awt.*;
 import java.io.File;
+import java.io.IOException;
 
 public class MainFrameController {
 
@@ -164,5 +165,14 @@ public class MainFrameController {
             fileChooser.setCurrentDirectory(lastDir);
         }
         return fileChooser;
+    }
+
+    public void onFileSelected(File file) {
+        try {
+            String content = fileProcessorService.readFileContent(file);
+            editorPanel.setTextAreaContent(content);
+        } catch (IOException e) {
+            NotificationUtil.showErrorDialog(mainFrame, "无法读取文件: " + e.getMessage());
+        }
     }
 }

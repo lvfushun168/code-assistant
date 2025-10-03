@@ -1,5 +1,7 @@
 package com.lfs.ui;
 
+import com.lfs.config.AppConfig;
+
 import javax.swing.*;
 import javax.swing.event.TreeExpansionEvent;
 import javax.swing.event.TreeWillExpandListener;
@@ -9,12 +11,17 @@ import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.ExpandVetoException;
 import javax.swing.tree.TreePath;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.io.File;
 
 public class FileExplorerPanel extends JPanel {
 
-    public FileExplorerPanel() {
+    private MainFrameController controller;
+
+    public FileExplorerPanel(MainFrameController controller) {
         super(new BorderLayout());
+        this.controller = controller;
         initUI();
     }
 
@@ -43,6 +50,31 @@ public class FileExplorerPanel extends JPanel {
         JTree fileTree = new JTree(treeModel);
         fileTree.setFont(new Font("SansSerif", Font.PLAIN, 14));
         fileTree.setCellRenderer(new FileTreeCellRenderer());
+
+        fileTree.addMouseListener(new MouseAdapter() {
+            public void mouseClicked(MouseEvent e) {
+                if (e.getClickCount() == 2) {
+                    TreePath path = fileTree.getPathForLocation(e.getX(), e.getY());
+                    if (path == null) {
+                        return;
+                    }
+                    DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
+                    if (node != null && node.getUserObject() instanceof File) {
+                        File file = (File) node.getUserObject();
+                        if (file.isFile()) {
+                            String fileName = file.getName();
+                            int lastDotIndex = fileName.lastIndexOf('.');
+                            if (lastDotIndex > 0) {
+                                String extension = fileName.substring(lastDotIndex + 1).toLowerCase();
+                                if (AppConfig.ALLOWED_EXTENSIONS.contains(extension)) {
+                                    controller.onFileSelected(file);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        });
 
         fileTree.addTreeWillExpandListener(new TreeWillExpandListener() {
             @Override

@@ -112,4 +112,14 @@ public class FileProcessorService {
             writer.write(content);
         }
     }
+
+    /**
+     * 读取单个文件的内容
+     * @param file 要读取的文件
+     * @return 文件内容
+     * @throws IOException 读取异常
+     */
+    public String readFileContent(File file) throws IOException {
+        return Files.readString(file.toPath());
+    }
 }

@@ -37,7 +37,7 @@ public class MainFrame extends JFrame {
         this.controller = new MainFrameController(this, null);
         this.editorPanel = new EditorPanel(this.controller);
         this.controller.setEditorPanel(this.editorPanel); // Set the correct panel instance on the controller
-        this.fileExplorerPanel = new FileExplorerPanel();
+        this.fileExplorerPanel = new FileExplorerPanel(this.controller);
 
 
         // --- 创建JSplitPane ---
