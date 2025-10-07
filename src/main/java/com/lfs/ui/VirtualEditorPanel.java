@@ -18,6 +18,7 @@ public class VirtualEditorPanel extends JPanel {
     private final FileLineListModel model;
     private final JScrollPane scrollPane;
     private final JLabel statusLabel;
+    private File currentFile;
 
     public VirtualEditorPanel() {
         super(new BorderLayout());
@@ -39,7 +40,12 @@ public class VirtualEditorPanel extends JPanel {
         add(statusLabel, BorderLayout.SOUTH);
     }
 
+    public File getCurrentFile() {
+        return currentFile;
+    }
+
     public void loadFile(File file) {
+        this.currentFile = file;
         statusLabel.setText("正在为 " + file.getName() + " 创建索引...");
         setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 

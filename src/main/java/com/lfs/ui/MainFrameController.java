@@ -196,6 +196,10 @@ public class MainFrameController {
         }
     }
 
+    public void onFileSelectedReadOnly(File file) {
+        mainFrame.openFileInTabReadOnly(file);
+    }
+
     public void saveCurrentFile() {
         Component activeComponent = mainFrame.getActiveEditorPanel();
         if (activeComponent == null) {

@@ -2,12 +2,16 @@ package com.lfs.service;
 
 import com.lfs.config.AppConfig;
 
+import com.lfs.config.AppConfig;
+
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
+import java.util.Comparator;
 
 /**
  * 文件处理
@@ -16,7 +20,7 @@ public class FileProcessorService {
 
     /**
      * 处理所选目录，生成所有允许的文件内容的平面字符串。
-     *
+     
      * @param directory 要处理的根目录
      * @return 一个包含所有有效文件的路径和内容的字符串
      * @throws IOException 文件读取错误
@@ -133,5 +137,72 @@ public class FileProcessorService {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
             writer.write(content);
         }
+    }
+
+    /**
+     * 创建新文件
+     * @param parentDir 父目录
+     * @param fileName 文件名
+     * @return a new file
+     * @throws IOException
+     */
+    public File createFile(File parentDir, String fileName) throws IOException {
+        File newFile = new File(parentDir, fileName);
+        if (newFile.createNewFile()) {
+            return newFile;
+        }
+        return null;
+    }
+
+    /**
+     * 创建新文件夹
+     * @param parentDir 父目录
+     * @param dirName 文件夹名称
+     * @return a new directory
+     */
+    public File createDirectory(File parentDir, String dirName) {
+        File newDir = new File(parentDir, dirName);
+        if (newDir.mkdir()) {
+            return newDir;
+        }
+        return null;
+    }
+
+    /**
+     * 重命名文件或文件夹
+     * @param oldFile 旧文件
+     * @param newName 新名称
+     * @return
+     */
+    public boolean renameFile(File oldFile, String newName) {
+        File newFile = new File(oldFile.getParent(), newName);
+        return oldFile.renameTo(newFile);
+    }
+
+    /**
+     * 删除文件或文件夹
+     * @param file
+     * @return
+     */
+    public boolean deleteFile(File file) {
+        if (file.isDirectory()) {
+            File[] files = file.listFiles();
+            if (files != null) {
+                for (File f : files) {
+                    deleteFile(f);
+                }
+            }
+        }
+        return file.delete();
+    }
+
+    /**
+     * 复制文件
+     * @param source
+     * @param dest
+     * @throws IOException
+     */
+    public void copyFile(File source, File dest) throws IOException {
+        Files.copy(source.toPath(), dest.toPath(), StandardCopyOption.REPLACE_EXISTING);
     }
 }
