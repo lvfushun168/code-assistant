@@ -79,7 +79,7 @@ public class VirtualEditorPanel extends JPanel {
             this.file = new RandomAccessFile(f, "r");
             offsets.add(0L); // 第一行从 0 开始
 
-            byte[] buffer = new byte[81920];  // 缓冲区80kb
+            byte[] buffer = new byte[65536]; // 64KB buffer
             int bytesRead;
             long currentFilePointer = 0;
 
