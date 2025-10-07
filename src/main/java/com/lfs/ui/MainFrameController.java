@@ -15,17 +15,11 @@ public class MainFrameController {
     private final FileProcessorService fileProcessorService;
     private final UserPreferencesService preferencesService;
     private final MainFrame mainFrame;
-    private EditorPanel editorPanel;
 
-    public MainFrameController(MainFrame mainFrame, EditorPanel editorPanel) {
+    public MainFrameController(MainFrame mainFrame) {
         this.mainFrame = mainFrame;
-        this.editorPanel = editorPanel;
         this.fileProcessorService = new FileProcessorService();
         this.preferencesService = new UserPreferencesService();
-    }
-
-    public void setEditorPanel(EditorPanel editorPanel) {
-        this.editorPanel = editorPanel;
     }
 
     /**
@@ -111,7 +105,12 @@ public class MainFrameController {
     }
 
     public void onSaveAs() {
-        String text = editorPanel.getTextAreaContent();
+        EditorPanel activeEditorPanel = mainFrame.getActiveEditorPanel();
+        if (activeEditorPanel == null) {
+            NotificationUtil.showErrorDialog(mainFrame, "没有活动的编辑器,无法保存!");
+            return;
+        }
+        String text = activeEditorPanel.getTextAreaContent();
         if (text == null || text.trim().isEmpty()) {
             NotificationUtil.showErrorDialog(mainFrame, "内容为空,无法保存!");
             return;
@@ -170,21 +169,27 @@ public class MainFrameController {
     public void onFileSelected(File file) {
         try {
             String content = fileProcessorService.readFileContent(file);
-            editorPanel.setTextAreaContent(content);
+            mainFrame.openFileInTab(file, content);
         } catch (IOException e) {
             NotificationUtil.showErrorDialog(mainFrame, "无法读取文件: " + e.getMessage());
         }
     }
 
     public void saveCurrentFile() {
-        File fileToSave = editorPanel.getCurrentFile();
+        EditorPanel activeEditorPanel = mainFrame.getActiveEditorPanel();
+        if (activeEditorPanel == null) {
+            // 没有活动的选项卡，无需执行任何操作
+            return;
+        }
+
+        File fileToSave = activeEditorPanel.getCurrentFile();
         if (fileToSave == null) {
             // 如果没有打开的文件，则可以调用“另存为”
             onSaveAs();
             return;
         }
 
-        String content = editorPanel.getTextAreaContent();
+        String content = activeEditorPanel.getTextAreaContent();
         try {
             fileProcessorService.saveFile(fileToSave, content);
             NotificationUtil.showSaveSuccess(mainFrame);
@@ -193,7 +198,4 @@ public class MainFrameController {
         }
     }
 
-    public EditorPanel getEditorPanel() {
-        return editorPanel;
-    }
 }

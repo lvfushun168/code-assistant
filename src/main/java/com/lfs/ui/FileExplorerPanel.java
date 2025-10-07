@@ -68,7 +68,6 @@ public class FileExplorerPanel extends JPanel {
                                 String extension = fileName.substring(lastDotIndex + 1).toLowerCase();
                                 if (AppConfig.ALLOWED_EXTENSIONS.contains(extension)) {
                                     controller.onFileSelected(file);
-                                    controller.getEditorPanel().setCurrentFile(file);
                                 }
                             }
                         }
