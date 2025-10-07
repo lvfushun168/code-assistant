@@ -15,7 +15,7 @@ public class AppConfig {
     public static final Set<String> ALLOWED_EXTENSIONS = new HashSet<>(Arrays.asList(
             "java", "py", "python", "html", "htm", "css", "js", "ts",
             "yml", "yaml", "properties", "conf", "config", "application",
-            "txt", "text", "md", "sql", "xml", "json", "sh", "bat", "gradle", "kt", "kts",
+            "txt", "text", "md", "sql", "xml", "json", "sh", "bat", "gradle", "kt", "kts", "log",
             "c", "h", "cpp", "hpp", "cs", "go", "rb", "php", "swift"
     ));
 
