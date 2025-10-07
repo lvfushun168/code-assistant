@@ -120,7 +120,7 @@ public class MainFrame extends JFrame {
         for (int i = 0; i < tabbedPane.getTabCount(); i++) {
             Component tabComponent = tabbedPane.getComponentAt(i);
             // 一个更健壮的检查方法是为保存文件的面板提供一个通用接口
-            if (tabComponent instanceof VirtualEditorPanel) {
+            if (tabComponent instanceof LargeFileEditorPanel) {
                 String tabTitle = tabbedPane.getTitleAt(i);
                 if (file.getName().equals(tabTitle)) {
                     tabbedPane.setSelectedIndex(i); // 切换到已存在的选项卡
@@ -129,8 +129,8 @@ public class MainFrame extends JFrame {
             }
         }
 
-        // 创建新的 VirtualEditorPanel
-        VirtualEditorPanel newViewerPanel = new VirtualEditorPanel();
+        // 创建新的 LargeFileEditorPanel
+        LargeFileEditorPanel newViewerPanel = new LargeFileEditorPanel();
         newViewerPanel.loadFile(file);
 
         // 添加到 tabbedPane
@@ -140,12 +140,8 @@ public class MainFrame extends JFrame {
         tabbedPane.setSelectedIndex(newTabIndex);
     }
 
-    public EditorPanel getActiveEditorPanel() {
-        Component selectedComponent = tabbedPane.getSelectedComponent();
-        if (selectedComponent instanceof EditorPanel) {
-            return (EditorPanel) selectedComponent;
-        }
-        return null;
+    public Component getActiveEditorPanel() {
+        return tabbedPane.getSelectedComponent();
     }
 
     /**
