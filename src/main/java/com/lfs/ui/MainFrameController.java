@@ -167,11 +167,32 @@ public class MainFrameController {
     }
 
     public void onFileSelected(File file) {
-        try {
-            String content = fileProcessorService.readFileContent(file);
-            mainFrame.openFileInTab(file, content);
-        } catch (IOException e) {
-            NotificationUtil.showErrorDialog(mainFrame, "无法读取文件: " + e.getMessage());
+        final long LARGE_FILE_THRESHOLD = 10 * 1024 * 1024; // 10 MB
+
+        if (file.length() > LARGE_FILE_THRESHOLD) {
+            mainFrame.openBigFileInTab(file);
+        } else {
+            mainFrame.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+            SwingWorker<String, Void> worker = new SwingWorker<String, Void>() {
+                @Override
+                protected String doInBackground() throws Exception {
+                    return fileProcessorService.readFileContent(file);
+                }
+
+                @Override
+                protected void done() {
+                    try {
+                        String content = get();
+                        mainFrame.openFileInTab(file, content);
+                    } catch (Exception e) {
+                        NotificationUtil.showErrorDialog(mainFrame, "无法读取文件: " + e.getMessage());
+                        e.printStackTrace();
+                    } finally {
+                        mainFrame.setCursor(Cursor.getDefaultCursor());
+                    }
+                }
+            };
+            worker.execute();
         }
     }
 

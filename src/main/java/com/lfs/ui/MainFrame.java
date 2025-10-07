@@ -115,6 +115,31 @@ public class MainFrame extends JFrame {
         tabbedPane.setSelectedIndex(newTabIndex);
     }
 
+    public void openBigFileInTab(File file) {
+        // 检查是否已经打开
+        for (int i = 0; i < tabbedPane.getTabCount(); i++) {
+            Component tabComponent = tabbedPane.getComponentAt(i);
+            // 一个更健壮的检查方法是为保存文件的面板提供一个通用接口
+            if (tabComponent instanceof VirtualEditorPanel) {
+                String tabTitle = tabbedPane.getTitleAt(i);
+                if (file.getName().equals(tabTitle)) {
+                    tabbedPane.setSelectedIndex(i); // 切换到已存在的选项卡
+                    return;
+                }
+            }
+        }
+
+        // 创建新的 VirtualEditorPanel
+        VirtualEditorPanel newViewerPanel = new VirtualEditorPanel();
+        newViewerPanel.loadFile(file);
+
+        // 添加到 tabbedPane
+        tabbedPane.addTab(file.getName(), newViewerPanel);
+        int newTabIndex = tabbedPane.getTabCount() - 1;
+        tabbedPane.setTabComponentAt(newTabIndex, new ButtonTabComponent(tabbedPane));
+        tabbedPane.setSelectedIndex(newTabIndex);
+    }
+
     public EditorPanel getActiveEditorPanel() {
         Component selectedComponent = tabbedPane.getSelectedComponent();
         if (selectedComponent instanceof EditorPanel) {
