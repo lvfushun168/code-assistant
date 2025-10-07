@@ -94,7 +94,7 @@ public class FileExplorerPanel extends JPanel {
     }
 
     private void loadInitialDirectory() {
-        File lastDir = prefsService.getLastDirectory();
+        File lastDir = prefsService.getFileExplorerLastDirectory();
         File initialDir = (lastDir != null && lastDir.exists()) ? lastDir : new File(System.getProperty("user.home"));
         navigateTo(initialDir, true);
     }
@@ -122,9 +122,8 @@ public class FileExplorerPanel extends JPanel {
             listModel.addElement(file);
         }
 
-        fileList.setSelectedIndex(0);
         currentPathLabel.setText(" " + directory.getAbsolutePath());
-        prefsService.saveLastDirectory(directory);
+        prefsService.saveFileExplorerLastDirectory(directory);
 
         if (!isInitial) {
             // 清除前进历史
@@ -175,7 +174,7 @@ public class FileExplorerPanel extends JPanel {
             }
         }
         currentPathLabel.setText(" " + directory.getAbsolutePath());
-        prefsService.saveLastDirectory(directory);
+        prefsService.saveFileExplorerLastDirectory(directory);
         updateNavigationButtons();
     }
 

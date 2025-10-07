@@ -17,6 +17,7 @@ public class UserPreferencesService {
     private static final String WINDOW_Y_KEY = "windowY";
     private static final String WINDOW_WIDTH_KEY = "windowWidth";
     private static final String WINDOW_HEIGHT_KEY = "windowHeight";
+    private static final String FILE_EXPLORER_LAST_DIRECTORY_KEY = "fileExplorerLastDirectory";
 
     public UserPreferencesService() {
         // 使用 userNodeForPackage 确保偏好设置按用户存储
@@ -83,5 +84,30 @@ public class UserPreferencesService {
         int x = prefs.getInt(WINDOW_X_KEY, -1);
         int y = prefs.getInt(WINDOW_Y_KEY, -1);
         return new Rectangle(x, y, width, height);
+    }
+
+    /**
+     * 保存文件浏览器上次打开的目录路径。
+     * @param directory 要保存的目录
+     */
+    public void saveFileExplorerLastDirectory(File directory) {
+        if (directory != null) {
+            prefs.put(FILE_EXPLORER_LAST_DIRECTORY_KEY, directory.getAbsolutePath());
+        }
+    }
+
+    /**
+     * 检索文件浏览器上次使用的目录。
+     * @return 最后一个目录的 File 对象，如果未设置，则为 null。
+     */
+    public File getFileExplorerLastDirectory() {
+        String lastDirPath = prefs.get(FILE_EXPLORER_LAST_DIRECTORY_KEY, null);
+        if (lastDirPath != null) {
+            File lastDir = new File(lastDirPath);
+            if (lastDir.exists() && lastDir.isDirectory()) {
+                return lastDir;
+            }
+        }
+        return null;
     }
 }
