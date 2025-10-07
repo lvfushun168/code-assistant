@@ -21,6 +21,32 @@ public class EditorPanel extends JPanel {
         this.rightTextArea = new JTextArea();
         initUI();
         setupSaveShortcut();
+        setupFindShortcut();
+    }
+
+    private FindReplaceDialog findReplaceDialog;
+
+    private void setupFindShortcut() {
+        InputMap inputMap = rightTextArea.getInputMap(JComponent.WHEN_FOCUSED);
+        ActionMap actionMap = rightTextArea.getActionMap();
+
+        KeyStroke keyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_F, Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx());
+        String findActionKey = "findAction";
+
+        inputMap.put(keyStroke, findActionKey);
+        actionMap.put(findActionKey, new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (findReplaceDialog == null) {
+                    // Find the top-level window (Frame) to be the owner of the dialog
+                    Window owner = SwingUtilities.getWindowAncestor(EditorPanel.this);
+                    if (owner instanceof Frame) {
+                        findReplaceDialog = new FindReplaceDialog((Frame) owner, rightTextArea);
+                    }
+                }
+                findReplaceDialog.setVisible(true);
+            }
+        });
     }
 
     private void initUI() {
