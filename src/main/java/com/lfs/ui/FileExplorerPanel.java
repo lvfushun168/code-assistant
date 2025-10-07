@@ -1,143 +1,212 @@
 package com.lfs.ui;
 
 import com.lfs.config.AppConfig;
+import com.lfs.service.UserPreferencesService;
 
 import javax.swing.*;
-import javax.swing.event.TreeExpansionEvent;
-import javax.swing.event.TreeWillExpandListener;
 import javax.swing.filechooser.FileSystemView;
-import javax.swing.tree.DefaultMutableTreeNode;
-import javax.swing.tree.DefaultTreeModel;
-import javax.swing.tree.ExpandVetoException;
-import javax.swing.tree.TreePath;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
 
 public class FileExplorerPanel extends JPanel {
 
-    private MainFrameController controller;
+    private final MainFrameController controller;
+    private final UserPreferencesService prefsService;
+    private final DefaultListModel<File> listModel = new DefaultListModel<>();
+    private final JList<File> fileList = new JList<>(listModel);
+    private final JLabel currentPathLabel = new JLabel();
+    private final List<File> history = new ArrayList<>();
+    private int historyIndex = -1;
+
+    private JButton backButton;
+    private JButton forwardButton;
+    private JButton upButton;
 
     public FileExplorerPanel(MainFrameController controller) {
         super(new BorderLayout());
         this.controller = controller;
+        this.prefsService = new UserPreferencesService();
         initUI();
+        loadInitialDirectory();
     }
 
     private void initUI() {
-        DefaultMutableTreeNode rootNode;
-        String os = System.getProperty("os.name").toLowerCase();
+        // 导航工具栏
+        JToolBar toolBar = new JToolBar();
+        toolBar.setFloatable(false);
+        toolBar.setLayout(new BorderLayout());
 
-        if (os.contains("win")) {
-            // Windows: 创建“我的电脑”作为根节点
-            rootNode = new DefaultMutableTreeNode("我的电脑");
-            File[] roots = File.listRoots();
-            for (File root : roots) {
-                DefaultMutableTreeNode driveNode = new DefaultMutableTreeNode(root);
-                driveNode.add(new DefaultMutableTreeNode(null)); // 占位符
-                rootNode.add(driveNode);
-            }
-        } else {
-            // macOS/Linux: 使用用户主目录作为根节点
-            String home = System.getProperty("user.home");
-            File rootDir = new File(home);
-            rootNode = new DefaultMutableTreeNode(rootDir);
-            createNodes(rootNode, rootDir); // 初始加载
-        }
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        backButton = new JButton("<");
+        forwardButton = new JButton(">");
+        upButton = new JButton("↑");
 
-        DefaultTreeModel treeModel = new DefaultTreeModel(rootNode);
-        JTree fileTree = new JTree(treeModel);
-        fileTree.setFont(new Font("SansSerif", Font.PLAIN, 14));
-        fileTree.setCellRenderer(new FileTreeCellRenderer());
+        backButton.setToolTipText("后退");
+        forwardButton.setToolTipText("前进");
+        upButton.setToolTipText("上一级");
 
-        fileTree.addMouseListener(new MouseAdapter() {
+        buttonPanel.add(backButton);
+        buttonPanel.add(forwardButton);
+        buttonPanel.add(upButton);
+
+        toolBar.add(buttonPanel, BorderLayout.WEST);
+        toolBar.add(currentPathLabel, BorderLayout.CENTER);
+
+        add(toolBar, BorderLayout.NORTH);
+
+        // 文件列表
+        fileList.setCellRenderer(new FileListCellRenderer());
+        fileList.setFont(new Font("SansSerif", Font.PLAIN, 14));
+        JScrollPane scrollPane = new JScrollPane(fileList);
+        add(scrollPane, BorderLayout.CENTER);
+
+        // 添加监听器
+        addListeners();
+    }
+
+    private void addListeners() {
+        backButton.addActionListener(e -> back());
+        forwardButton.addActionListener(e -> forward());
+        upButton.addActionListener(e -> up());
+
+        fileList.addMouseListener(new MouseAdapter() {
+            @Override
             public void mouseClicked(MouseEvent e) {
                 if (e.getClickCount() == 2) {
-                    TreePath path = fileTree.getPathForLocation(e.getX(), e.getY());
-                    if (path == null) {
-                        return;
-                    }
-                    DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
-                    if (node != null && node.getUserObject() instanceof File) {
-                        File file = (File) node.getUserObject();
-                        if (file.isFile()) {
-                            String fileName = file.getName();
-                            int lastDotIndex = fileName.lastIndexOf('.');
-                            if (lastDotIndex > 0) {
-                                String extension = fileName.substring(lastDotIndex + 1).toLowerCase();
-                                if (AppConfig.ALLOWED_EXTENSIONS.contains(extension)) {
-                                    controller.onFileSelected(file);
-                                }
-                            }
+                    int index = fileList.locationToIndex(e.getPoint());
+                    if (index >= 0) {
+                        File file = listModel.getElementAt(index);
+                        if (file.isDirectory()) {
+                            navigateTo(file);
+                        } else if (file.isFile()) {
+                            openFile(file);
                         }
                     }
                 }
             }
         });
-
-        fileTree.addTreeWillExpandListener(new TreeWillExpandListener() {
-            @Override
-            public void treeWillExpand(TreeExpansionEvent event) throws ExpandVetoException {
-                DefaultMutableTreeNode node = (DefaultMutableTreeNode) event.getPath().getLastPathComponent();
-                if (node.getUserObject() instanceof File) {
-                    // 检查是否是我们的占位符节点
-                    if (node.getChildCount() == 1 && node.getFirstChild() instanceof DefaultMutableTreeNode) {
-                        DefaultMutableTreeNode child = (DefaultMutableTreeNode) node.getFirstChild();
-                        if (child.getUserObject() == null) { // 这是一个占位符
-                            node.removeAllChildren(); // 移除占位符
-                            File file = (File) node.getUserObject();
-                            createNodes(node, file); // 动态加载子节点
-                            treeModel.nodeStructureChanged(node);
-                        }
-                    }
-                }
-            }
-
-            @Override
-            public void treeWillCollapse(TreeExpansionEvent event) throws ExpandVetoException {
-                // 不需要处理折叠事件
-            }
-        });
-
-        JScrollPane scrollPane = new JScrollPane(fileTree);
-        add(scrollPane, BorderLayout.CENTER);
     }
 
-    private void createNodes(DefaultMutableTreeNode node, File dir) {
-        if (!dir.isDirectory()) {
+    private void loadInitialDirectory() {
+        File lastDir = prefsService.getLastDirectory();
+        File initialDir = (lastDir != null && lastDir.exists()) ? lastDir : new File(System.getProperty("user.home"));
+        navigateTo(initialDir, true);
+    }
+
+    private void navigateTo(File directory) {
+        navigateTo(directory, false);
+    }
+
+    private void navigateTo(File directory, boolean isInitial) {
+        if (directory == null || !directory.isDirectory()) {
             return;
         }
 
-        File[] files = dir.listFiles();
+        File[] files = directory.listFiles();
         if (files == null) {
+            // 此处可以显示错误消息
             return;
         }
+
+        listModel.clear();
+        Arrays.sort(files, Comparator.comparing(File::getName));
+        Arrays.sort(files, Comparator.comparing(f -> !f.isDirectory())); // Folders first
 
         for (File file : files) {
-            DefaultMutableTreeNode childNode = new DefaultMutableTreeNode(file);
-            node.add(childNode);
-            if (file.isDirectory()) {
-                childNode.add(new DefaultMutableTreeNode(null));
+            listModel.addElement(file);
+        }
+
+        fileList.setSelectedIndex(0);
+        currentPathLabel.setText(" " + directory.getAbsolutePath());
+        prefsService.saveLastDirectory(directory);
+
+        if (!isInitial) {
+            // 清除前进历史
+            while (history.size() > historyIndex + 1) {
+                history.remove(history.size() - 1);
+            }
+            history.add(directory);
+            historyIndex++;
+        } else {
+            history.add(directory);
+            historyIndex = 0;
+        }
+        updateNavigationButtons();
+    }
+
+    private void back() {
+        if (historyIndex > 0) {
+            historyIndex--;
+            File dir = history.get(historyIndex);
+            navigateToHistory(dir);
+        }
+    }
+
+    private void forward() {
+        if (historyIndex < history.size() - 1) {
+            historyIndex++;
+            File dir = history.get(historyIndex);
+            navigateToHistory(dir);
+        }
+    }
+
+    private void up() {
+        File currentDir = new File(currentPathLabel.getText().trim());
+        File parentDir = currentDir.getParentFile();
+        if (parentDir != null) {
+            navigateTo(parentDir);
+        }
+    }
+
+    private void navigateToHistory(File directory) {
+        listModel.clear();
+        File[] files = directory.listFiles();
+        if (files != null) {
+            Arrays.sort(files, Comparator.comparing(File::getName));
+            Arrays.sort(files, Comparator.comparing(f -> !f.isDirectory())); // Folders first
+            for (File file : files) {
+                listModel.addElement(file);
+            }
+        }
+        currentPathLabel.setText(" " + directory.getAbsolutePath());
+        prefsService.saveLastDirectory(directory);
+        updateNavigationButtons();
+    }
+
+    private void updateNavigationButtons() {
+        backButton.setEnabled(historyIndex > 0);
+        forwardButton.setEnabled(historyIndex < history.size() - 1);
+        File currentDir = new File(currentPathLabel.getText().trim());
+        upButton.setEnabled(currentDir.getParentFile() != null);
+    }
+
+    private void openFile(File file) {
+        String fileName = file.getName();
+        int lastDotIndex = fileName.lastIndexOf('.');
+        if (lastDotIndex > 0) {
+            String extension = fileName.substring(lastDotIndex + 1).toLowerCase();
+            if (AppConfig.ALLOWED_EXTENSIONS.contains(extension)) {
+                controller.onFileSelected(file);
             }
         }
     }
 
-    private static class FileTreeCellRenderer extends javax.swing.tree.DefaultTreeCellRenderer {
-        private FileSystemView fileSystemView = FileSystemView.getFileSystemView();
+    private static class FileListCellRenderer extends DefaultListCellRenderer {
+        private final FileSystemView fileSystemView = FileSystemView.getFileSystemView();
 
         @Override
-        public Component getTreeCellRendererComponent(JTree tree, Object value, boolean sel, boolean expanded, boolean leaf, int row, boolean hasFocus) {
-            super.getTreeCellRendererComponent(tree, value, sel, expanded, leaf, row, hasFocus);
-            if (value instanceof DefaultMutableTreeNode) {
-                Object userObject = ((DefaultMutableTreeNode) value).getUserObject();
-                if (userObject instanceof File) {
-                    File file = (File) userObject;
-                    setText(fileSystemView.getSystemDisplayName(file));
-                    setIcon(fileSystemView.getSystemIcon(file));
-                } else if (userObject != null) {
-                    setText(userObject.toString());
-                }
+        public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+            super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+            if (value instanceof File) {
+                File file = (File) value;
+                setText(fileSystemView.getSystemDisplayName(file));
+                setIcon(fileSystemView.getSystemIcon(file));
             }
             return this;
         }
