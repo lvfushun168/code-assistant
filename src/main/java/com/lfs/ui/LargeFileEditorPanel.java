@@ -4,11 +4,24 @@ import com.lfs.util.NotificationUtil;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import javax.swing.AbstractAction;
+import javax.swing.ActionMap;
+import javax.swing.InputMap;
+import javax.swing.JComponent;
+import javax.swing.KeyStroke;
+import java.awt.Window;
+import javax.swing.SwingUtilities;
+
 
 public class LargeFileEditorPanel extends JPanel {
 
@@ -18,6 +31,7 @@ public class LargeFileEditorPanel extends JPanel {
     private final JLabel statusLabel;
     private final JPanel statusPanel;
     private File currentFile;
+    private FindReplaceDialog findReplaceDialog;
 
     public LargeFileEditorPanel() {
         super(new BorderLayout());
@@ -37,6 +51,42 @@ public class LargeFileEditorPanel extends JPanel {
         statusPanel.add(progressBar, BorderLayout.NORTH);
         statusPanel.add(statusLabel, BorderLayout.CENTER);
         add(statusPanel, BorderLayout.SOUTH);
+
+        // 添加键盘监听器以处理保存快捷键
+        textArea.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                if ((e.getKeyCode() == KeyEvent.VK_S) && (e.getModifiersEx() & Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx()) != 0) {
+                    saveFile();
+                    e.consume(); // 消费事件，防止其他监听器处理
+                }
+            }
+        });
+
+        setupFindShortcut();
+    }
+
+    private void setupFindShortcut() {
+        InputMap inputMap = textArea.getInputMap(JComponent.WHEN_FOCUSED);
+        ActionMap actionMap = textArea.getActionMap();
+
+        KeyStroke keyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_F, Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx());
+        String findActionKey = "findAction";
+
+        inputMap.put(keyStroke, findActionKey);
+        actionMap.put(findActionKey, new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (findReplaceDialog == null) {
+                    // Find the top-level window (Frame) to be the owner of the dialog
+                    Window owner = SwingUtilities.getWindowAncestor(LargeFileEditorPanel.this);
+                    if (owner instanceof Frame) {
+                        findReplaceDialog = new FindReplaceDialog((Frame) owner, textArea);
+                    }
+                }
+                findReplaceDialog.setVisible(true);
+            }
+        });
     }
 
     public void loadFile(File file) {
@@ -89,6 +139,48 @@ public class LargeFileEditorPanel extends JPanel {
                 } finally {
                     setCursor(Cursor.getDefaultCursor());
                     progressBar.setVisible(false);
+                }
+            }
+        }.execute();
+    }
+
+    public JTextArea getTextArea() {
+        return textArea;
+    }
+
+    public void saveFile() {
+        if (currentFile == null) {
+            NotificationUtil.showErrorDialog(this, "没有要保存的文件。");
+            return;
+        }
+
+        // 在保存操作期间显示加载光标
+        setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+        statusLabel.setText("正在保存 " + currentFile.getName() + "...");
+
+        // 使用 SwingWorker 在后台线程中执行文件写入操作
+        new SwingWorker<Void, Void>() {
+            @Override
+            protected Void doInBackground() throws Exception {
+                try (OutputStreamWriter writer = new OutputStreamWriter(new FileOutputStream(currentFile), StandardCharsets.UTF_8)) {
+                    writer.write(textArea.getText());
+                }
+                return null;
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    get(); // 检查在 doInBackground 中是否有异常抛出
+                    statusLabel.setText("文件已保存: " + currentFile.getName());
+                    NotificationUtil.showSaveSuccess(LargeFileEditorPanel.this);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    statusLabel.setText("保存失败: " + e.getMessage());
+                    NotificationUtil.showErrorDialog(LargeFileEditorPanel.this, "保存文件失败: " + e.getMessage());
+                } finally {
+                    // 恢复默认光标
+                    setCursor(Cursor.getDefaultCursor());
                 }
             }
         }.execute();

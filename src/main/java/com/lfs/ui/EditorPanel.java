@@ -83,6 +83,10 @@ public class EditorPanel extends JPanel {
         return rightTextArea.getText();
     }
 
+    public JTextArea getTextArea() {
+        return rightTextArea;
+    }
+
     public void setTextAreaContent(String content) {
         rightTextArea.setText(content);
     }

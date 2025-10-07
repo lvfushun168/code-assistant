@@ -10,6 +10,9 @@ import java.awt.event.KeyEvent;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
+import javax.swing.Timer;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 
 public class FindReplaceDialog extends JDialog {
 
@@ -27,9 +30,9 @@ public class FindReplaceDialog extends JDialog {
         super(owner, "查找和替换", false);
         this.textArea = textArea;
         this.highlighter = textArea.getHighlighter();
-        this.painter = new DefaultHighlighter.DefaultHighlightPainter(new Color(177, 220, 252)); // Light blue highlight
+        this.painter = new DefaultHighlighter.DefaultHighlightPainter(new Color(177, 220, 252)); // 浅蓝色高亮
 
-        // --- UI Components ---
+        // --- UI 组件 ---
         findField = new JTextField(20);
         replaceField = new JTextField(20);
         regexCheckBox = new JCheckBox("正则表达式");
@@ -40,7 +43,7 @@ public class FindReplaceDialog extends JDialog {
         JButton replaceAllButton = new JButton("全部替换");
         JButton closeButton = new JButton("关闭");
 
-        // --- Layout ---
+        // --- 布局 ---
         JPanel panel = new JPanel(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(5, 5, 5, 5);
@@ -60,24 +63,31 @@ public class FindReplaceDialog extends JDialog {
         gbc.gridx = 0; gbc.gridy = 3; gbc.gridwidth = 3; panel.add(statusLabel, gbc);
         gbc.gridx = 3; gbc.gridy = 3; panel.add(closeButton, gbc);
 
-        // --- Listeners ---
+        // --- 监听器 ---
         findNextButton.addActionListener(e -> findNext());
         replaceButton.addActionListener(e -> replace());
         replaceAllButton.addActionListener(e -> replaceAll());
         closeButton.addActionListener(e -> dispose());
 
-        findField.addKeyListener(new KeyAdapter() {
-            @Override
-            public void keyReleased(KeyEvent e) {
-                if (e.getKeyCode() == KeyEvent.VK_ENTER) {
-                    findNext();
-                } else {
-                    updateOccurrenceCount();
-                }
+        // 延迟搜索的计时器
+        Timer searchTimer = new Timer(500, e -> updateOccurrenceCount());
+        searchTimer.setRepeats(false);
+
+        findField.getDocument().addDocumentListener(new DocumentListener() {
+            public void insertUpdate(DocumentEvent e) {
+                searchTimer.restart();
+            }
+            public void removeUpdate(DocumentEvent e) {
+                searchTimer.restart();
+            }
+            public void changedUpdate(DocumentEvent e) {
+                searchTimer.restart();
             }
         });
 
-        // Reset search on dialog open
+        findField.addActionListener(e -> findNext()); // 处理 Enter 键
+
+        // 对话框打开时重置搜索
         addWindowListener(new java.awt.event.WindowAdapter() {
             @Override
             public void windowClosing(java.awt.event.WindowEvent windowEvent) {
@@ -87,7 +97,7 @@ public class FindReplaceDialog extends JDialog {
         closeButton.addActionListener(e -> resetSearch());
 
 
-        // --- Dialog Settings ---
+        // --- 对话框设置 ---
         getContentPane().add(panel);
         pack();
         setLocationRelativeTo(owner);
@@ -105,7 +115,7 @@ public class FindReplaceDialog extends JDialog {
         int searchFrom = (lastMatchIndex == -1) ? 0 : lastMatchIndex + 1;
 
         if (searchFrom >= content.length()) {
-            searchFrom = 0; // Wrap search
+            searchFrom = 0; // 包含搜索
         }
 
         try {
@@ -115,9 +125,9 @@ public class FindReplaceDialog extends JDialog {
                 if (matcher.find(searchFrom)) {
                     highlightMatch(matcher.start(), matcher.end());
                     lastMatchIndex = matcher.start();
-                } else if (lastMatchIndex != -1) { // Wrap search if not found from current pos
+                } else if (lastMatchIndex != -1) { // 如果从当前位置未找到，则进行全局搜索
                     lastMatchIndex = -1;
-                    findNext(); // Try again from the beginning
+                    findNext(); // 从头再来
                 } else {
                     statusLabel.setText("未找到匹配项");
                 }
@@ -221,7 +231,7 @@ public class FindReplaceDialog extends JDialog {
             textArea.setCaretPosition(start);
             textArea.moveCaretPosition(end);
         } catch (BadLocationException e) {
-            e.printStackTrace(); // Should not happen
+            e.printStackTrace();
         }
     }
 
@@ -233,12 +243,12 @@ public class FindReplaceDialog extends JDialog {
     @Override
     public void setVisible(boolean b) {
         if (b) {
-            // Every time the dialog is shown, reset the search index
+            // 每次显示对话框时，重置搜索索引
             lastMatchIndex = -1;
-            // And update the count for the current text in the find field
+            // 并更新查找字段中当前文本的计数
             updateOccurrenceCount();
         } else {
-            // When hiding, remove any highlights
+            // 隐藏时，移除所有高亮显示
             resetSearch();
         }
         super.setVisible(b);
