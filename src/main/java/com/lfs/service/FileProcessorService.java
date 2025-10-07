@@ -122,4 +122,16 @@ public class FileProcessorService {
     public String readFileContent(File file) throws IOException {
         return Files.readString(file.toPath());
     }
+
+    /**
+     * 将内容保存到指定文件
+     * @param file 要保存的文件
+     * @param content 要写入的内容
+     * @throws IOException 写入异常
+     */
+    public void saveFile(File file, String content) throws IOException {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
+            writer.write(content);
+        }
+    }
 }

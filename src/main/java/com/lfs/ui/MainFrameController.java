@@ -175,4 +175,25 @@ public class MainFrameController {
             NotificationUtil.showErrorDialog(mainFrame, "无法读取文件: " + e.getMessage());
         }
     }
+
+    public void saveCurrentFile() {
+        File fileToSave = editorPanel.getCurrentFile();
+        if (fileToSave == null) {
+            // 如果没有打开的文件，则可以调用“另存为”
+            onSaveAs();
+            return;
+        }
+
+        String content = editorPanel.getTextAreaContent();
+        try {
+            fileProcessorService.saveFile(fileToSave, content);
+            NotificationUtil.showSaveSuccess(mainFrame);
+        } catch (IOException e) {
+            NotificationUtil.showErrorDialog(mainFrame, "保存文件失败: " + e.getMessage());
+        }
+    }
+
+    public EditorPanel getEditorPanel() {
+        return editorPanel;
+    }
 }

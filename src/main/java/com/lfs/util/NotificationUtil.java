@@ -37,4 +37,17 @@ public class NotificationUtil {
                 JOptionPane.ERROR_MESSAGE
         );
     }
+
+    /**
+     * 显示保存成功的对话框
+     * @param parentComponent 父组件
+     */
+    public static void showSaveSuccess(Component parentComponent) {
+        JOptionPane.showMessageDialog(
+                parentComponent,
+                "文件保存成功！",
+                "保存成功",
+                JOptionPane.INFORMATION_MESSAGE
+        );
+    }
 }
