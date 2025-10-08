@@ -1,6 +1,8 @@
 package com.lfs.ui;
 
+import cn.hutool.json.JSONUtil;
 import com.lfs.service.UserPreferencesService;
+import com.lfs.util.NotificationUtil;
 
 import javax.swing.*;
 import java.awt.*;
@@ -66,8 +68,25 @@ public class MainFrame extends JFrame {
 
         // --- 创建“JSON”菜单 ---
         JMenu jsonMenu = new JMenu("<html><u>JSON</u></html>");
+        JMenu trans2CodeMenu = new JMenu("JSON转代码..");
+        JMenu trans2JsonMenu = new JMenu("代码转JSON..");
         JMenuItem formatJsonMenuItem = new JMenuItem("格式化JSON");
+        formatJsonMenuItem.addActionListener(e -> {
+            Component selectedComponent = getActiveEditorPanel();
+            if (selectedComponent instanceof EditorPanel) {
+                EditorPanel editorPanel = (EditorPanel) selectedComponent;
+                String content = editorPanel.getTextAreaContent();
+                try {
+                    String formattedJson = cn.hutool.json.JSONUtil.formatJsonStr(content);
+                    editorPanel.setTextAreaContent(formattedJson);
+                } catch (Exception ex) {
+                    NotificationUtil.showErrorDialog(this,"JSON 格式不正确");
+                }
+            }
+        });
         jsonMenu.add(formatJsonMenuItem);
+        jsonMenu.add(trans2CodeMenu);
+        jsonMenu.add(trans2JsonMenu);
 
         // --- 将菜单添加到菜单栏 ---
         menuBar.add(project);
