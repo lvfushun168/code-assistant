@@ -3,9 +3,10 @@ package com.lfs.ui;
 import com.lfs.util.NotificationUtil;
 
 import javax.swing.*;
+import javax.swing.undo.UndoManager;
 import java.awt.*;
 import java.awt.event.ActionEvent;
-import java.awt.event.KeyAdapter;
+import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.io.File;
 import java.io.FileInputStream;
@@ -32,6 +33,7 @@ public class LargeFileEditorPanel extends JPanel {
     private final JPanel statusPanel;
     private File currentFile;
     private FindReplaceDialog findReplaceDialog;
+    private final UndoManager undoManager = new UndoManager();
 
     public LargeFileEditorPanel() {
         super(new BorderLayout());
@@ -39,6 +41,7 @@ public class LargeFileEditorPanel extends JPanel {
         textArea.setLineWrap(false);
         textArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
         textArea.setEditable(false); // 最初不可编辑，直到文件加载完成
+        textArea.getDocument().addUndoableEditListener(undoManager);
 
         scrollPane = new JScrollPane(textArea);
         add(scrollPane, BorderLayout.CENTER);
@@ -52,33 +55,30 @@ public class LargeFileEditorPanel extends JPanel {
         statusPanel.add(statusLabel, BorderLayout.CENTER);
         add(statusPanel, BorderLayout.SOUTH);
 
-        // 添加键盘监听器以处理保存快捷键
-        textArea.addKeyListener(new KeyAdapter() {
-            @Override
-            public void keyPressed(KeyEvent e) {
-                if ((e.getKeyCode() == KeyEvent.VK_S) && (e.getModifiersEx() & Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx()) != 0) {
-                    saveFile();
-                    e.consume(); // 消费事件，防止其他监听器处理
-                }
-            }
-        });
-
-        setupFindShortcut();
+        setupShortcuts();
     }
 
-    private void setupFindShortcut() {
+    private void setupShortcuts() {
         InputMap inputMap = textArea.getInputMap(JComponent.WHEN_FOCUSED);
         ActionMap actionMap = textArea.getActionMap();
 
-        KeyStroke keyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_F, Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx());
-        String findActionKey = "findAction";
+        // Save: Command/Control + S
+        KeyStroke saveKeyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_S, Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx());
+        inputMap.put(saveKeyStroke, "save");
+        actionMap.put("save", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                saveFile();
+            }
+        });
 
-        inputMap.put(keyStroke, findActionKey);
-        actionMap.put(findActionKey, new AbstractAction() {
+        // Find: Command/Control + F
+        KeyStroke findKeyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_F, Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx());
+        inputMap.put(findKeyStroke, "find");
+        actionMap.put("find", new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 if (findReplaceDialog == null) {
-                    // Find the top-level window (Frame) to be the owner of the dialog
                     Window owner = SwingUtilities.getWindowAncestor(LargeFileEditorPanel.this);
                     if (owner instanceof Frame) {
                         findReplaceDialog = new FindReplaceDialog((Frame) owner, textArea);
@@ -87,10 +87,35 @@ public class LargeFileEditorPanel extends JPanel {
                 findReplaceDialog.setVisible(true);
             }
         });
+
+        // Undo: Command/Control + Z
+        KeyStroke undoKeyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_Z, Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx());
+        inputMap.put(undoKeyStroke, "undo");
+        actionMap.put("undo", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (undoManager.canUndo()) {
+                    undoManager.undo();
+                }
+            }
+        });
+
+        // Redo: Command/Control + Shift + Z
+        KeyStroke redoKeyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_Z, Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx() | InputEvent.SHIFT_DOWN_MASK);
+        inputMap.put(redoKeyStroke, "redo");
+        actionMap.put("redo", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (undoManager.canRedo()) {
+                    undoManager.redo();
+                }
+            }
+        });
     }
 
     public void loadFile(File file) {
         this.currentFile = file;
+        undoManager.discardAllEdits();
         textArea.setText(""); // 清除之前的内容
         statusLabel.setText("正在加载 " + file.getName() + "...");
         progressBar.setValue(0);
