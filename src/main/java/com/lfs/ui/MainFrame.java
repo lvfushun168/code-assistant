@@ -69,6 +69,8 @@ public class MainFrame extends JFrame {
         // --- 创建“JSON”菜单 ---
         JMenu jsonMenu = new JMenu("<html><u>JSON</u></html>");
         JMenu trans2CodeMenu = new JMenu("JSON转代码..");
+        JMenuItem json2java = new JMenuItem("转为Java对象");
+        trans2CodeMenu.add(json2java);
         JMenu trans2JsonMenu = new JMenu("代码转JSON..");
         JMenuItem formatJsonMenuItem = new JMenuItem("格式化JSON");
         formatJsonMenuItem.addActionListener(e -> {
