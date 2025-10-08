@@ -70,7 +70,7 @@ public class MainFrameController {
                                 // 在工作线程中执行文件写入
                                 new Thread(() -> {
                                     try {
-                                        fileProcessorService.saveStringToFile(processedResult, outputFile);
+                                        fileProcessorService.saveFile(outputFile, processedResult);
                                         SwingUtilities.invokeLater(() -> NotificationUtil.showSuccessDialog(mainFrame, "文件已保存到: " + outputFile.getAbsolutePath()));
                                     } catch (Exception ex) {
                                         SwingUtilities.invokeLater(() -> NotificationUtil.showErrorDialog(mainFrame, "保存文件时出错: " + ex.getMessage()));
@@ -138,7 +138,7 @@ public class MainFrameController {
                 }
 
                 try {
-                    fileProcessorService.saveStringToFile(text, fileToSave);
+                    fileProcessorService.saveFile(fileToSave, text);
                     NotificationUtil.showSuccessDialog(mainFrame, "文件已保存到: " + fileToSave.getAbsolutePath());
                 } catch (Exception ex) {
                     NotificationUtil.showErrorDialog(mainFrame, "保存文件时出错: " + ex.getMessage());

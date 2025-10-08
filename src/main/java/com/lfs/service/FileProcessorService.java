@@ -52,11 +52,7 @@ public class FileProcessorService {
      * @throws IOException 文件读取错误
      */
     private void traverseDirectoryForContent(File dir, StringBuilder builder) throws IOException {
-        File[] files = dir.listFiles();
-        if (files == null) {
-            return;
-        }
-        Arrays.sort(files);
+        File[] files = listAndSortFiles(dir);
 
         for (File file : files) {
             if (file.isDirectory()) {
@@ -84,11 +80,7 @@ public class FileProcessorService {
      * @param prefix  绘制树线的前缀
      */
     private void buildTreeStructure(File dir, StringBuilder builder, String prefix) {
-        File[] files = dir.listFiles();
-        if (files == null) {
-            return;
-        }
-        Arrays.sort(files);
+        File[] files = listAndSortFiles(dir);
 
         for (int i = 0; i < files.length; i++) {
             File file = files[i];
@@ -104,18 +96,15 @@ public class FileProcessorService {
         }
     }
 
-    /**
-     * 将字符串内容保存到文件。
-     *
-     * @param content 要保存的字符串内容。
-     * @param file    要将内容保存到的文件。
-     * @throws IOException 如果发生I/O错误。
-     */
-    public void saveStringToFile(String content, File file) throws IOException {
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
-            writer.write(content);
+    private File[] listAndSortFiles(File dir) {
+        File[] files = dir.listFiles();
+        if (files == null) {
+            return new File[0]; // 返回空数组而不是null
         }
+        Arrays.sort(files);
+        return files;
     }
+
 
     /**
      * 读取单个文件的内容

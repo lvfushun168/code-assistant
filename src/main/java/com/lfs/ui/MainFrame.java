@@ -109,10 +109,7 @@ public class MainFrame extends JFrame {
         newEditorPanel.setTextAreaContent(content);
 
         // 添加到 tabbedPane
-        tabbedPane.addTab(file.getName(), newEditorPanel);
-        int newTabIndex = tabbedPane.getTabCount() - 1;
-        tabbedPane.setTabComponentAt(newTabIndex, new ButtonTabComponent(tabbedPane));
-        tabbedPane.setSelectedIndex(newTabIndex);
+        addTab(file.getName(), newEditorPanel);
     }
 
     public void openFileInTabReadOnly(File file) {
@@ -133,10 +130,7 @@ public class MainFrame extends JFrame {
         newEditorPanel.loadFile(file);
 
         // 添加到 tabbedPane
-        tabbedPane.addTab(file.getName(), newEditorPanel);
-        int newTabIndex = tabbedPane.getTabCount() - 1;
-        tabbedPane.setTabComponentAt(newTabIndex, new ButtonTabComponent(tabbedPane));
-        tabbedPane.setSelectedIndex(newTabIndex);
+        addTab(file.getName(), newEditorPanel);
     }
 
     public void openBigFileInTab(File file) {
@@ -158,14 +152,18 @@ public class MainFrame extends JFrame {
         newViewerPanel.loadFile(file);
 
         // 添加到 tabbedPane
-        tabbedPane.addTab(file.getName(), newViewerPanel);
-        int newTabIndex = tabbedPane.getTabCount() - 1;
-        tabbedPane.setTabComponentAt(newTabIndex, new ButtonTabComponent(tabbedPane));
-        tabbedPane.setSelectedIndex(newTabIndex);
+        addTab(file.getName(), newViewerPanel);
     }
 
     public Component getActiveEditorPanel() {
         return tabbedPane.getSelectedComponent();
+    }
+
+    private void addTab(String title, Component panel) {
+        tabbedPane.addTab(title, panel);
+        int newTabIndex = tabbedPane.getTabCount() - 1;
+        tabbedPane.setTabComponentAt(newTabIndex, new ButtonTabComponent(tabbedPane));
+        tabbedPane.setSelectedIndex(newTabIndex);
     }
 
     /**
