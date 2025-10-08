@@ -64,10 +64,16 @@ public class MainFrame extends JFrame {
         // --- 创建“导入”菜单 ---
         JMenu importMenu = new JMenu("<html><u>导入</u></html>");
 
+        // --- 创建“JSON”菜单 ---
+        JMenu jsonMenu = new JMenu("<html><u>JSON</u></html>");
+        JMenuItem formatJsonMenuItem = new JMenuItem("格式化JSON");
+        jsonMenu.add(formatJsonMenuItem);
+
         // --- 将菜单添加到菜单栏 ---
         menuBar.add(project);
         menuBar.add(saveMenu);
         menuBar.add(importMenu);
+        menuBar.add(jsonMenu);
 
         rightPanel.add(menuBar, BorderLayout.NORTH);
         rightPanel.add(tabbedPane, BorderLayout.CENTER);
