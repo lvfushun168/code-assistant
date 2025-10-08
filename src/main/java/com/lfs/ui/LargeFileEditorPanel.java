@@ -62,7 +62,7 @@ public class LargeFileEditorPanel extends JPanel {
         InputMap inputMap = textArea.getInputMap(JComponent.WHEN_FOCUSED);
         ActionMap actionMap = textArea.getActionMap();
 
-        // Save: Command/Control + S
+        // 保存: Command/Control + S
         KeyStroke saveKeyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_S, Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx());
         inputMap.put(saveKeyStroke, "save");
         actionMap.put("save", new AbstractAction() {
@@ -72,7 +72,7 @@ public class LargeFileEditorPanel extends JPanel {
             }
         });
 
-        // Find: Command/Control + F
+        // 查找: Command/Control + F
         KeyStroke findKeyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_F, Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx());
         inputMap.put(findKeyStroke, "find");
         actionMap.put("find", new AbstractAction() {
@@ -88,7 +88,7 @@ public class LargeFileEditorPanel extends JPanel {
             }
         });
 
-        // Undo: Command/Control + Z
+        // 撤销: Command/Control + Z
         KeyStroke undoKeyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_Z, Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx());
         inputMap.put(undoKeyStroke, "undo");
         actionMap.put("undo", new AbstractAction() {
@@ -100,7 +100,7 @@ public class LargeFileEditorPanel extends JPanel {
             }
         });
 
-        // Redo: Command/Control + Shift + Z
+        // 重做: Command/Control + Shift + Z
         KeyStroke redoKeyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_Z, Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx() | InputEvent.SHIFT_DOWN_MASK);
         inputMap.put(redoKeyStroke, "redo");
         actionMap.put("redo", new AbstractAction() {

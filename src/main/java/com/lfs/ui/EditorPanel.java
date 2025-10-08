@@ -88,7 +88,7 @@ public class EditorPanel extends JPanel {
         InputMap inputMap = rightTextArea.getInputMap(JComponent.WHEN_FOCUSED);
         ActionMap actionMap = rightTextArea.getActionMap();
 
-        // Undo: Command/Control + Z
+        // 撤销: Command/Control + Z
         KeyStroke undoKeyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_Z, Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx());
         inputMap.put(undoKeyStroke, "undo");
         actionMap.put("undo", new AbstractAction() {
@@ -100,7 +100,7 @@ public class EditorPanel extends JPanel {
             }
         });
 
-        // Redo: Command/Control + Shift + Z
+        // 重做: Command/Control + Shift + Z
         KeyStroke redoKeyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_Z, Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx() | InputEvent.SHIFT_DOWN_MASK);
         inputMap.put(redoKeyStroke, "redo");
         actionMap.put("redo", new AbstractAction() {
