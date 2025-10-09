@@ -90,6 +90,8 @@
                                 <option>-Dapple.laf.useScreenMenuBar=true</option>
                                 <option>-Dapple.awt.application.name=CodeAssistant</option>
                             </javaOptions>
+                            <!-- 为应用添加文件关联 -->
+                            <fileAssociations>src/main/resources/file-associations.properties</fileAssociations>
                         </configuration>
                     </execution>
                 </executions>

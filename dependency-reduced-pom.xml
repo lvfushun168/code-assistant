@@ -33,6 +33,34 @@
           </execution>
         </executions>
       </plugin>
+      <plugin>
+        <groupId>org.panteleyev</groupId>
+        <artifactId>jpackage-maven-plugin</artifactId>
+        <version>1.5.0</version>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>jpackage</goal>
+            </goals>
+            <configuration>
+              <name>代码协作助手</name>
+              <input>${project.build.directory}</input>
+              <mainClass>com.lfs.CodeAssistant</mainClass>
+              <mainJar>${project.build.finalName}.jar</mainJar>
+              <appVersion>${project.version}</appVersion>
+              <icon>src/main/resources/icons/app.icns</icon>
+              <type>APP_IMAGE</type>
+              <destination>dist</destination>
+              <javaOptions>
+                <option>-Dapple.laf.useScreenMenuBar=true</option>
+                <option>-Dapple.awt.application.name=CodeAssistant</option>
+              </javaOptions>
+              <fileAssociations>src/main/resources/file-associations.properties</fileAssociations>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
   <properties>

@@ -182,6 +182,12 @@ public class MainFrame extends JFrame {
         addTab(file.getName(), newViewerPanel);
     }
 
+    public void openFile(File file) {
+        if (file != null && file.exists() && file.isFile()) {
+            controller.onFileSelected(file);
+        }
+    }
+
     public Component getActiveEditorPanel() {
         return tabbedPane.getSelectedComponent();
     }
