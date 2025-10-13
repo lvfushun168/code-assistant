@@ -86,6 +86,15 @@ public class MainFrame extends JFrame {
                 }
             }
         });
+        // --- 创建“账户”菜单 ---
+        JMenu accountMenu = new JMenu("<html><u>账户</u></html>");
+        JMenuItem signupMenuItem = new JMenuItem("注册...");
+        accountMenu.add(signupMenuItem);
+        JMenuItem loginMenuItem = new JMenuItem("登入...");
+        accountMenu.add(loginMenuItem);
+        JMenuItem logoutMenuItem = new JMenuItem("登出...");
+        accountMenu.add(logoutMenuItem);
+
         jsonMenu.add(formatJsonMenuItem);
         jsonMenu.add(trans2CodeMenu);
         jsonMenu.add(trans2JsonMenu);
@@ -95,6 +104,7 @@ public class MainFrame extends JFrame {
         menuBar.add(saveMenu);
         menuBar.add(importMenu);
         menuBar.add(jsonMenu);
+        menuBar.add(accountMenu);
 
         rightPanel.add(menuBar, BorderLayout.NORTH);
         rightPanel.add(tabbedPane, BorderLayout.CENTER);
