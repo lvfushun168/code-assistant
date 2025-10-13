@@ -87,7 +87,7 @@ public class MainFrame extends JFrame {
             }
         });
         // --- 创建“账户”菜单 ---
-        JMenu accountMenu = new JMenu("<html><u>账户</u></html>");
+        JMenu accountMenu = new JMenu("<html><u>云账户</u></html>");
         JMenuItem signupMenuItem = new JMenuItem("注册...");
         accountMenu.add(signupMenuItem);
         JMenuItem loginMenuItem = new JMenuItem("登入...");
