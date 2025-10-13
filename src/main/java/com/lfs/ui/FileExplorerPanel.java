@@ -140,54 +140,67 @@ public class FileExplorerPanel extends JPanel {
             return;
         }
 
-        int index = fileList.locationToIndex(e.getPoint());
-        if (index < 0) {
-            return;
-        }
-        fileList.setSelectedIndex(index);
-        File selectedFile = fileList.getSelectedValue();
-
         JPopupMenu popupMenu = new JPopupMenu();
+        int index = fileList.locationToIndex(e.getPoint());
 
-        if (selectedFile.isFile()) {
-            JMenuItem openItem = new JMenuItem("打开");
-            openItem.addActionListener(evt -> openFile(selectedFile));
-            popupMenu.add(openItem);
+        if (index < 0) {
+            File currentDir = new File(currentPathLabel.getText().trim());
+            if (currentDir.isDirectory()) {
+                JMenuItem newFileItem = new JMenuItem("新建文档");
+                newFileItem.addActionListener(evt -> createFile(currentDir));
+                popupMenu.add(newFileItem);
 
-            JMenuItem openReadOnlyItem = new JMenuItem("只读打开");
-            openReadOnlyItem.addActionListener(evt -> openFileReadOnly(selectedFile));
-            popupMenu.add(openReadOnlyItem);
-        } else if (selectedFile.isDirectory()) {
-            JMenuItem newFileItem = new JMenuItem("新建文档");
-            newFileItem.addActionListener(evt -> createFile(selectedFile));
-            popupMenu.add(newFileItem);
+                JMenuItem newDirItem = new JMenuItem("新建文件夹");
+                newDirItem.addActionListener(evt -> createDirectory(currentDir));
+                popupMenu.add(newDirItem);
+            }
+        } else {
+            // Clicked on an item
+            fileList.setSelectedIndex(index);
+            File selectedFile = fileList.getSelectedValue();
 
-            JMenuItem newDirItem = new JMenuItem("新建文件夹");
-            newDirItem.addActionListener(evt -> createDirectory(selectedFile));
-            popupMenu.add(newDirItem);
+            if (selectedFile.isFile()) {
+                JMenuItem openItem = new JMenuItem("打开");
+                openItem.addActionListener(evt -> openFile(selectedFile));
+                popupMenu.add(openItem);
+
+                JMenuItem openReadOnlyItem = new JMenuItem("只读打开");
+                openReadOnlyItem.addActionListener(evt -> openFileReadOnly(selectedFile));
+                popupMenu.add(openReadOnlyItem);
+            } else if (selectedFile.isDirectory()) {
+                JMenuItem newFileItem = new JMenuItem("新建文档");
+                newFileItem.addActionListener(evt -> createFile(selectedFile));
+                popupMenu.add(newFileItem);
+
+                JMenuItem newDirItem = new JMenuItem("新建文件夹");
+                newDirItem.addActionListener(evt -> createDirectory(selectedFile));
+                popupMenu.add(newDirItem);
+            }
+
+            popupMenu.addSeparator();
+
+            JMenuItem renameItem = new JMenuItem("重命名");
+            renameItem.addActionListener(evt -> renameFile(selectedFile));
+            popupMenu.add(renameItem);
+
+            JMenuItem deleteItem = new JMenuItem("删除");
+            deleteItem.addActionListener(evt -> deleteFile(selectedFile));
+            popupMenu.add(deleteItem);
+
+            popupMenu.addSeparator();
+
+            JMenuItem copyItem = new JMenuItem("复制");
+            copyItem.addActionListener(evt -> copyFile());
+            popupMenu.add(copyItem);
+
+            JMenuItem pasteItem = new JMenuItem("粘贴");
+            pasteItem.addActionListener(evt -> pasteFile());
+            popupMenu.add(pasteItem);
         }
 
-        popupMenu.addSeparator();
-
-        JMenuItem renameItem = new JMenuItem("重命名");
-        renameItem.addActionListener(evt -> renameFile(selectedFile));
-        popupMenu.add(renameItem);
-
-        JMenuItem deleteItem = new JMenuItem("删除");
-        deleteItem.addActionListener(evt -> deleteFile(selectedFile));
-        popupMenu.add(deleteItem);
-
-        popupMenu.addSeparator();
-
-        JMenuItem copyItem = new JMenuItem("复制");
-        copyItem.addActionListener(evt -> copyFile());
-        popupMenu.add(copyItem);
-
-        JMenuItem pasteItem = new JMenuItem("粘贴");
-        pasteItem.addActionListener(evt -> pasteFile());
-        popupMenu.add(pasteItem);
-
-        popupMenu.show(e.getComponent(), e.getX(), e.getY());
+        if (popupMenu.getComponentCount() > 0) {
+            popupMenu.show(e.getComponent(), e.getX(), e.getY());
+        }
     }
 
     private void openFileReadOnly(File file) {
