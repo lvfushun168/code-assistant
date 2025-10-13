@@ -167,7 +167,7 @@ public class MainFrameController {
     }
 
     public void onFileSelected(File file) {
-        final long LARGE_FILE_THRESHOLD = 10 * 1024 * 1024; // 10 MB
+        final long LARGE_FILE_THRESHOLD = 2 * 1024 * 1024; // 2 MB
 
         if (file.length() > LARGE_FILE_THRESHOLD) {
             mainFrame.openBigFileInTab(file);
