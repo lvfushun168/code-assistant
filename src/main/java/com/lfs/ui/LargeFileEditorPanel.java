@@ -120,6 +120,19 @@ public class LargeFileEditorPanel extends JPanel {
         statusLabel.setText("正在加载 " + file.getName() + "...");
         progressBar.setValue(0);
         progressBar.setVisible(true);
+        long length = file.length(); // 大文件如果在100kb-10mb之间，这里会卡半天，需要进一步细分
+        byte[] buffer;
+        long sleep;
+        if (length > 100 * 1024 && length < 10 * 1024 * 1024) {
+            buffer = new byte[2 * 1024]; // 2kb buffer
+            sleep = 10L;
+        }else if (length > 10 * 1024 * 1024) {
+            buffer = new byte[64 * 1024]; // 64kb buffer
+            sleep = 3L;
+        }else {
+            buffer = new byte[1024]; // 1KB buffer
+            sleep = 3L;
+        }
         setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 
         new SwingWorker<Void, ProgressChunk>() {
@@ -127,7 +140,6 @@ public class LargeFileEditorPanel extends JPanel {
             protected Void doInBackground() throws Exception {
                 long fileLength = file.length();
                 try (InputStream in = new FileInputStream(file)) {
-                    byte[] buffer = new byte[65536]; // 64KB buffer
                     int bytesRead;
                     long totalBytesRead = 0;
                     while ((bytesRead = in.read(buffer)) != -1) {
@@ -136,7 +148,7 @@ public class LargeFileEditorPanel extends JPanel {
                         int progress = (int) ((totalBytesRead * 100) / fileLength);
                         publish(new ProgressChunk(chunk, progress));
                         // 节流，防止UI线程被过多事件淹没
-                        Thread.sleep(3);
+                        Thread.sleep(sleep);
                     }
                 }
                 return null;

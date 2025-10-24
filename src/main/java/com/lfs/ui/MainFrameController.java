@@ -167,7 +167,7 @@ public class MainFrameController {
     }
 
     public void onFileSelected(File file) {
-        final long LARGE_FILE_THRESHOLD = 2 * 1024 * 1024; // TODO 实际上普通查看器打开200kb的都费力，而大文件查看器在这个尺寸也会卡半天
+        final long LARGE_FILE_THRESHOLD = 100 * 1024; // TODO 实际上普通查看器打开100kb的都费力，而大文件查看器在这个尺寸也会卡半天
 
         if (file.length() > LARGE_FILE_THRESHOLD) {
             mainFrame.openBigFileInTab(file);
