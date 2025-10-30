@@ -33,28 +33,28 @@ public class RegisterDialog extends JDialog {
         gbc.insets = new Insets(5, 5, 5, 5);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        // Username
+        // 用户名
         gbc.gridx = 0;
         gbc.gridy = 0;
         panel.add(new JLabel("用户名:"), gbc);
         gbc.gridx = 1;
         panel.add(usernameField, gbc);
 
-        // Password
+        // 密码
         gbc.gridx = 0;
         gbc.gridy = 1;
         panel.add(new JLabel("密码:"), gbc);
         gbc.gridx = 1;
         panel.add(passwordField, gbc);
 
-        // Confirm Password
+        // 确认密码
         gbc.gridx = 0;
         gbc.gridy = 2;
         panel.add(new JLabel("确认密码:"), gbc);
         gbc.gridx = 1;
         panel.add(confirmPasswordField, gbc);
 
-        // Captcha
+        // 验证码
         gbc.gridx = 0;
         gbc.gridy = 3;
         panel.add(new JLabel("验证码:"), gbc);
@@ -67,7 +67,7 @@ public class RegisterDialog extends JDialog {
         captchaPanel.add(refreshCaptcha);
         panel.add(captchaPanel, gbc);
 
-        // Buttons
+        // 按钮
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
         JButton registerButton = new JButton("注册");
         registerButton.addActionListener(this::performRegistration);
@@ -79,7 +79,7 @@ public class RegisterDialog extends JDialog {
         add(panel, BorderLayout.CENTER);
         add(buttonPanel, BorderLayout.SOUTH);
 
-        // Initial captcha
+        // 初始化验证码
         refreshCaptcha();
 
         pack();

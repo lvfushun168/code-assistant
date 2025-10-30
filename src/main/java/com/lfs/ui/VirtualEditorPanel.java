@@ -85,7 +85,7 @@ public class VirtualEditorPanel extends JPanel {
             this.file = new RandomAccessFile(f, "r");
             offsets.add(0L); // 第一行从 0 开始
 
-            byte[] buffer = new byte[65536]; // 64KB buffer
+            byte[] buffer = new byte[65536]; // 64KB 缓冲区
             int bytesRead;
             long currentFilePointer = 0;
 
@@ -148,7 +148,7 @@ public class VirtualEditorPanel extends JPanel {
                  return new String(baos.toByteArray(), StandardCharsets.UTF_8);
             } catch (IOException e) {
                 e.printStackTrace();
-                return "Error reading line " + index;
+                return "读取行错误 " + index;
             }
         }
 

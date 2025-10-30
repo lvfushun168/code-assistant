@@ -49,7 +49,7 @@ public class NotificationUtil {
     }
 
     /**
-     * 显示一个短暂的提示消息 (toast)
+     * 显示一个短暂的提示消息 (浮动提示)
      * @param parentComponent 父组件
      * @param message 消息内容
      */

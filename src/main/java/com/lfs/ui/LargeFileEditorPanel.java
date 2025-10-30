@@ -28,7 +28,7 @@ public class LargeFileEditorPanel extends JPanel {
     public LargeFileEditorPanel() {
         super(new BorderLayout());
         textArea = new RSyntaxTextArea();
-        textArea.setEditable(false); // Initially not editable
+        textArea.setEditable(false); // 最初不可编辑
         textArea.setCodeFoldingEnabled(true);
         textArea.setAntiAliasingEnabled(true);
 
@@ -86,7 +86,7 @@ public class LargeFileEditorPanel extends JPanel {
             }
         });
 
-        // Undo/Redo are handled by RSyntaxTextArea's default keymap
+        // 撤销/重做由 RSyntaxTextArea 的默认键映射处理
     }
 
     public void loadFile(File file) {
@@ -98,13 +98,13 @@ public class LargeFileEditorPanel extends JPanel {
         progressBar.setVisible(true);
         long length = file.length();
 
-        // Buffer size capped at 32KB to prevent long-blocking UI updates.
+        // 缓冲区大小上限为32KB，以防止长时间阻塞UI更新。
         final int MIN_BUFFER_SIZE = 4 * 1024; // 4KB
         final int MAX_BUFFER_SIZE = 32 * 1024; // 32KB
         int bufferSize = (int) Math.max(MIN_BUFFER_SIZE, Math.min(MAX_BUFFER_SIZE, length / 200));
         final byte[] buffer = new byte[bufferSize];
 
-        // A small delay to yield to the UI thread.
+        // 短暂延迟以让出UI线程。
         final long sleep = 2L;
         setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 
@@ -129,7 +129,7 @@ public class LargeFileEditorPanel extends JPanel {
             @Override
             protected void process(List<ProgressChunk> chunks) {
                 for (ProgressChunk chunk : chunks) {
-                    // Appending to RSyntaxTextArea should be faster
+                    // 追加到 RSyntaxTextArea 应该会更快
                     textArea.append(chunk.getText());
                     progressBar.setValue(chunk.getProgress());
                 }
@@ -138,9 +138,9 @@ public class LargeFileEditorPanel extends JPanel {
             @Override
             protected void done() {
                 try {
-                    get(); // Check for exceptions
+                    get(); // 检查异常
                     textArea.setEditable(true);
-                    textArea.setCaretPosition(0); // Move caret to the beginning
+                    textArea.setCaretPosition(0); // 将光标移动到开头
                     statusLabel.setText("加载完成: " + file.getName());
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -171,7 +171,7 @@ public class LargeFileEditorPanel extends JPanel {
             @Override
             protected Void doInBackground() throws Exception {
                 try (OutputStreamWriter writer = new OutputStreamWriter(new FileOutputStream(currentFile), StandardCharsets.UTF_8)) {
-                    // This can be slow for huge files, but saving is expected to take time.
+                    // 对于大文件来说，这可能会很慢，但保存操作预计会花费一些时间。
                     writer.write(textArea.getText());
                 }
                 return null;
@@ -204,7 +204,7 @@ public class LargeFileEditorPanel extends JPanel {
 
     public void setCurrentFile(File currentFile) {
         this.currentFile = currentFile;
-        // Set syntax based on file extension
+        // 根据文件扩展名设置语法
         String fileName = currentFile.getName();
         int lastDot = fileName.lastIndexOf('.');
         if (lastDot > 0) {
@@ -263,7 +263,7 @@ public class LargeFileEditorPanel extends JPanel {
     }
 }
 
-// Helper class for publishing text chunks and progress
+// 用于发布文本块和进度的辅助类
 class ProgressChunk {
     private final String text;
     private final int progress;

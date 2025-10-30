@@ -15,7 +15,7 @@ public class EditorPanel extends JPanel {
     private final RSyntaxTextArea rightTextArea;
     private final MainFrameController controller;
     private File currentFile;
-    // RSyntaxTextArea has its own undo manager, so we don't need a separate one.
+    // RSyntaxTextArea 有自己的撤销管理器，所以我们不需要一个单独的。
 
     public EditorPanel(MainFrameController controller) {
         super(new BorderLayout());
@@ -24,7 +24,7 @@ public class EditorPanel extends JPanel {
         initUI();
         setupSaveShortcut();
         setupFindShortcut();
-        // Undo/Redo is handled by RSyntaxTextArea by default
+        // 撤销/重做由 RSyntaxTextArea 默认处理
     }
 
     private FindReplaceDialog findReplaceDialog;
@@ -43,7 +43,7 @@ public class EditorPanel extends JPanel {
                 if (findReplaceDialog == null) {
                     Window owner = SwingUtilities.getWindowAncestor(EditorPanel.this);
                     if (owner instanceof Frame) {
-                        // FindReplaceDialog expects a JTextArea, and RSyntaxTextArea is a subclass, so this should work.
+                        // FindReplaceDialog 需要一个 JTextArea，而 RSyntaxTextArea 是其子类，所以这应该能工作。
                         findReplaceDialog = new FindReplaceDialog((Frame) owner, rightTextArea);
                     }
                 }
@@ -62,7 +62,7 @@ public class EditorPanel extends JPanel {
             org.fife.ui.rsyntaxtextarea.Theme theme = org.fife.ui.rsyntaxtextarea.Theme.load(in);
             theme.apply(rightTextArea);
         } catch (java.io.IOException e) {
-            // In case of an error, we can log it, but the editor will still be functional with default colors.
+            // 如果出现错误，我们可以记录它，但编辑器仍将使用默认颜色正常工作。
             e.printStackTrace();
         }
 
@@ -97,9 +97,9 @@ public class EditorPanel extends JPanel {
     }
 
     public void setTextAreaContent(String content) {
-        // RSyntaxTextArea is fast enough that we don't need complex listener management for setting text.
+        // RSyntaxTextArea 的速度足够快，我们不需要为设置文本而进行复杂的监听器管理。
         rightTextArea.setText(content);
-        rightTextArea.discardAllEdits(); // Clear undo history after setting new content
+        rightTextArea.discardAllEdits(); // 设置新内容后清除撤销历史
     }
 
     public File getCurrentFile() {
@@ -108,7 +108,7 @@ public class EditorPanel extends JPanel {
 
     public void setCurrentFile(File currentFile) {
         this.currentFile = currentFile;
-        // Set syntax based on file extension
+        // 根据文件扩展名设置语法
         String fileName = currentFile.getName();
         int lastDot = fileName.lastIndexOf('.');
         if (lastDot > 0) {

@@ -155,7 +155,7 @@ public class FileExplorerPanel extends JPanel {
                 popupMenu.add(newDirItem);
             }
         } else {
-            // Clicked on an item
+            // 点击了列表项
             fileList.setSelectedIndex(index);
             File selectedFile = fileList.getSelectedValue();
 
@@ -320,7 +320,7 @@ public class FileExplorerPanel extends JPanel {
 
         listModel.clear();
         Arrays.sort(files, Comparator.comparing(File::getName));
-        Arrays.sort(files, Comparator.comparing(f -> !f.isDirectory())); // Folders first
+        Arrays.sort(files, Comparator.comparing(f -> !f.isDirectory())); // 文件夹优先
 
         for (File file : files) {
             listModel.addElement(file);
@@ -372,7 +372,7 @@ public class FileExplorerPanel extends JPanel {
         File[] files = directory.listFiles();
         if (files != null) {
             Arrays.sort(files, Comparator.comparing(File::getName));
-            Arrays.sort(files, Comparator.comparing(f -> !f.isDirectory())); // Folders first
+            Arrays.sort(files, Comparator.comparing(f -> !f.isDirectory())); // 文件夹优先
             for (File file : files) {
                 listModel.addElement(file);
             }

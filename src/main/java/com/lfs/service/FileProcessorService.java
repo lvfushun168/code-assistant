@@ -39,7 +39,7 @@ public class FileProcessorService {
      */
     public String generateStructureFromDirectory(File directory) {
         StringBuilder structureBuilder = new StringBuilder();
-        structureBuilder.append(directory.getName()).append("\n"); // Add root directory
+        structureBuilder.append(directory.getName()).append("\n"); // 添加根目录
         buildTreeStructure(directory, structureBuilder, "");
         return structureBuilder.toString();
     }
@@ -132,7 +132,7 @@ public class FileProcessorService {
      * 创建新文件
      * @param parentDir 父目录
      * @param fileName 文件名
-     * @return a new file
+     * @return 新文件
      * @throws IOException
      */
     public File createFile(File parentDir, String fileName) throws IOException {
@@ -147,7 +147,7 @@ public class FileProcessorService {
      * 创建新文件夹
      * @param parentDir 父目录
      * @param dirName 文件夹名称
-     * @return a new directory
+     * @return 新目录
      */
     public File createDirectory(File parentDir, String dirName) {
         File newDir = new File(parentDir, dirName);

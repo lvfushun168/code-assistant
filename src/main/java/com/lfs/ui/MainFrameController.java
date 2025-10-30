@@ -157,7 +157,7 @@ public class MainFrameController {
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
         fileChooser.setDialogTitle(dialogTitle);
-        fileChooser.setFileHidingEnabled(false); // Show hidden files
+        fileChooser.setFileHidingEnabled(false); // 显示隐藏文件
 
         File lastDir = preferencesService.getLastDirectory();
         if (lastDir != null) {

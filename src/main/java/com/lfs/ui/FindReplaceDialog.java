@@ -156,7 +156,7 @@ public class FindReplaceDialog extends JDialog {
             return;
         }
 
-        // If there's a selection that matches, replace it
+        // 如果有匹配的选区，则替换它
         String selectedText = textArea.getSelectedText();
         if (selectedText != null && selectedText.equals(findText)) {
             textArea.replaceSelection(replaceText);
