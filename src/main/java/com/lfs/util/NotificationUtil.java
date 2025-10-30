@@ -71,8 +71,9 @@ public class NotificationUtil {
         dialog.pack();
 
         if (parentComponent != null) {
-            int parentX = parentComponent.getX();
-            int parentY = parentComponent.getY();
+            Point parentLocationOnScreen = parentComponent.getLocationOnScreen();
+            int parentX = parentLocationOnScreen.x;
+            int parentY = parentLocationOnScreen.y;
             int parentWidth = parentComponent.getWidth();
             int dialogWidth = dialog.getWidth();
             dialog.setLocation(parentX + (parentWidth - dialogWidth) / 2, parentY + 30);

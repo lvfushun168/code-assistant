@@ -255,7 +255,7 @@ public class FileExplorerPanel extends JPanel {
     private void copyFile(File selectedFile) {
         if (selectedFile != null) {
             ClipboardService.copyToClipboard(selectedFile.getAbsolutePath());
-            NotificationUtil.showSuccessDialog(this, "已复制: " + selectedFile.getName());
+            NotificationUtil.showToast(this, "已复制: " + selectedFile.getName());
         }
     }
 
@@ -285,6 +285,7 @@ public class FileExplorerPanel extends JPanel {
                 Files.copy(fileToCopy.toPath(), newFile.toPath());
             }
             refresh();
+            NotificationUtil.showToast(this, "粘贴成功！");
         } catch (IOException ex) {
             NotificationUtil.showErrorDialog(this, "粘贴失败: " + ex.getMessage());
         }
