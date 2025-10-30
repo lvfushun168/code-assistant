@@ -8,17 +8,16 @@ import com.lfs.util.NotificationUtil;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileSystemView;
+import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.DefaultTreeCellRenderer;
+import javax.swing.tree.DefaultTreeModel;
+import javax.swing.tree.TreePath;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.InputEvent;
-import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -29,8 +28,9 @@ public class FileExplorerPanel extends JPanel {
     private final MainFrameController controller;
     private final UserPreferencesService prefsService;
     private final FileProcessorService fileProcessorService;
-    private final DefaultListModel<File> listModel = new DefaultListModel<>();
-    private final JList<File> fileList = new JList<>(listModel);
+    private final JTree fileTree;
+    private final DefaultTreeModel treeModel;
+    private final DefaultMutableTreeNode rootNode;
     private final JLabel currentPathLabel = new JLabel();
     private final List<File> history = new ArrayList<>();
     private int historyIndex = -1;
@@ -44,12 +44,17 @@ public class FileExplorerPanel extends JPanel {
         this.controller = controller;
         this.prefsService = new UserPreferencesService();
         this.fileProcessorService = new FileProcessorService();
+
+        rootNode = new DefaultMutableTreeNode();
+        treeModel = new DefaultTreeModel(rootNode);
+        fileTree = new JTree(treeModel);
+
         initUI();
         loadInitialDirectory();
     }
 
     private void initUI() {
-        // 导航工具栏
+        // Navigation Toolbar
         JToolBar toolBar = new JToolBar();
         toolBar.setFloatable(false);
         toolBar.setLayout(new BorderLayout());
@@ -72,13 +77,14 @@ public class FileExplorerPanel extends JPanel {
 
         add(toolBar, BorderLayout.NORTH);
 
-        // 文件列表
-        fileList.setCellRenderer(new FileListCellRenderer());
-        fileList.setFont(new Font("SansSerif", Font.PLAIN, 14));
-        JScrollPane scrollPane = new JScrollPane(fileList);
+        // File Tree
+        fileTree.setRootVisible(false);
+        fileTree.setShowsRootHandles(true);
+        fileTree.setCellRenderer(new FileTreeCellRenderer());
+        fileTree.setFont(new Font("SansSerif", Font.PLAIN, 14));
+        JScrollPane scrollPane = new JScrollPane(fileTree);
         add(scrollPane, BorderLayout.CENTER);
 
-        // 添加监听器
         addListeners();
     }
 
@@ -87,120 +93,114 @@ public class FileExplorerPanel extends JPanel {
         forwardButton.addActionListener(e -> forward());
         upButton.addActionListener(e -> up());
 
-        fileList.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                int index = fileList.locationToIndex(e.getPoint());
-                if (index < 0) {
-                    return;
-                }
-                File file = listModel.getElementAt(index);
-                // 双击打开
-                if (e.getClickCount() == 2) {
-                    if (file.isDirectory()) {
-                        navigateTo(file);
-                    } else if (file.isFile()) {
-                        openFile(file);
-                    }
-                }
-            }
-
+        fileTree.addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
-                showPopupMenu(e);
+                if (e.isPopupTrigger()) {
+                    showPopupMenu(e);
+                }
             }
 
             @Override
             public void mouseReleased(MouseEvent e) {
-                showPopupMenu(e);
+                if (e.isPopupTrigger()) {
+                    showPopupMenu(e);
+                }
             }
-        });
 
-        // 快捷键
-        int shortcutMask = Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx();
-        fileList.getInputMap(JComponent.WHEN_FOCUSED).put(KeyStroke.getKeyStroke(KeyEvent.VK_C, shortcutMask), "copy");
-        fileList.getActionMap().put("copy", new AbstractAction() {
             @Override
-            public void actionPerformed(ActionEvent e) {
-                copyFile();
-            }
-        });
-
-        fileList.getInputMap(JComponent.WHEN_FOCUSED).put(KeyStroke.getKeyStroke(KeyEvent.VK_V, shortcutMask), "paste");
-        fileList.getActionMap().put("paste", new AbstractAction() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                pasteFile();
+            public void mouseClicked(MouseEvent e) {
+                if (e.getClickCount() == 2) {
+                    TreePath path = fileTree.getPathForLocation(e.getX(), e.getY());
+                    if (path != null) {
+                        DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
+                        File file = (File) node.getUserObject();
+                        if (file.isDirectory()) {
+                            navigateTo(file);
+                        } else {
+                            openFile(file);
+                        }
+                    }
+                }
             }
         });
     }
 
     private void showPopupMenu(MouseEvent e) {
-        if (!e.isPopupTrigger()) {
-            return;
-        }
+        TreePath path = fileTree.getPathForLocation(e.getX(), e.getY());
 
-        JPopupMenu popupMenu = new JPopupMenu();
-        int index = fileList.locationToIndex(e.getPoint());
-
-        if (index < 0) {
-            File currentDir = new File(currentPathLabel.getText().trim());
-            if (currentDir.isDirectory()) {
-                JMenuItem newFileItem = new JMenuItem("新建文档");
-                newFileItem.addActionListener(evt -> createFile(currentDir));
-                popupMenu.add(newFileItem);
-
-                JMenuItem newDirItem = new JMenuItem("新建文件夹");
-                newDirItem.addActionListener(evt -> createDirectory(currentDir));
-                popupMenu.add(newDirItem);
-            }
+        if (path == null) {
+            // Background click
+            JPopupMenu popupMenu = createBackgroundPopupMenu();
+            popupMenu.show(e.getComponent(), e.getX(), e.getY());
         } else {
-            // 点击了列表项
-            fileList.setSelectedIndex(index);
-            File selectedFile = fileList.getSelectedValue();
-
-            if (selectedFile.isFile()) {
-                JMenuItem openItem = new JMenuItem("打开");
-                openItem.addActionListener(evt -> openFile(selectedFile));
-                popupMenu.add(openItem);
-
-                JMenuItem openReadOnlyItem = new JMenuItem("只读打开");
-                openReadOnlyItem.addActionListener(evt -> openFileReadOnly(selectedFile));
-                popupMenu.add(openReadOnlyItem);
-            } else if (selectedFile.isDirectory()) {
-                JMenuItem newFileItem = new JMenuItem("新建文档");
-                newFileItem.addActionListener(evt -> createFile(selectedFile));
-                popupMenu.add(newFileItem);
-
-                JMenuItem newDirItem = new JMenuItem("新建文件夹");
-                newDirItem.addActionListener(evt -> createDirectory(selectedFile));
-                popupMenu.add(newDirItem);
-            }
-
-            popupMenu.addSeparator();
-
-            JMenuItem renameItem = new JMenuItem("重命名");
-            renameItem.addActionListener(evt -> renameFile(selectedFile));
-            popupMenu.add(renameItem);
-
-            JMenuItem deleteItem = new JMenuItem("删除");
-            deleteItem.addActionListener(evt -> deleteFile(selectedFile));
-            popupMenu.add(deleteItem);
-
-            popupMenu.addSeparator();
-
-            JMenuItem copyItem = new JMenuItem("复制");
-            copyItem.addActionListener(evt -> copyFile());
-            popupMenu.add(copyItem);
-
-            JMenuItem pasteItem = new JMenuItem("粘贴");
-            pasteItem.addActionListener(evt -> pasteFile());
-            popupMenu.add(pasteItem);
-        }
-
-        if (popupMenu.getComponentCount() > 0) {
+            // Item click
+            fileTree.setSelectionPath(path);
+            DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
+            File selectedFile = (File) node.getUserObject();
+            JPopupMenu popupMenu = createItemPopupMenu(selectedFile);
             popupMenu.show(e.getComponent(), e.getX(), e.getY());
         }
+    }
+
+    private JPopupMenu createBackgroundPopupMenu() {
+        JPopupMenu popupMenu = new JPopupMenu();
+        File currentDir = new File(currentPathLabel.getText().trim());
+
+        JMenuItem newFileItem = new JMenuItem("新建文档");
+        newFileItem.addActionListener(evt -> createFile(currentDir));
+        popupMenu.add(newFileItem);
+
+        JMenuItem newDirItem = new JMenuItem("新建文件夹");
+        newDirItem.addActionListener(evt -> createDirectory(currentDir));
+        popupMenu.add(newDirItem);
+
+        popupMenu.addSeparator();
+
+        JMenuItem pasteItem = new JMenuItem("粘贴");
+        pasteItem.addActionListener(evt -> pasteFile());
+        popupMenu.add(pasteItem);
+        return popupMenu;
+    }
+
+    private JPopupMenu createItemPopupMenu(File selectedFile) {
+        JPopupMenu popupMenu = new JPopupMenu();
+
+        if (selectedFile.isFile()) {
+            JMenuItem openItem = new JMenuItem("打开");
+            openItem.addActionListener(evt -> openFile(selectedFile));
+            popupMenu.add(openItem);
+
+            JMenuItem openReadOnlyItem = new JMenuItem("只读打开");
+            openReadOnlyItem.addActionListener(evt -> openFileReadOnly(selectedFile));
+            popupMenu.add(openReadOnlyItem);
+        } else if (selectedFile.isDirectory()) {
+            JMenuItem newFileItem = new JMenuItem("新建文档");
+            newFileItem.addActionListener(evt -> createFile(selectedFile));
+            popupMenu.add(newFileItem);
+
+            JMenuItem newDirItem = new JMenuItem("新建文件夹");
+            newDirItem.addActionListener(evt -> createDirectory(selectedFile));
+            popupMenu.add(newDirItem);
+        }
+
+        popupMenu.addSeparator();
+
+        JMenuItem renameItem = new JMenuItem("重命名");
+        renameItem.addActionListener(evt -> renameFile(selectedFile));
+        popupMenu.add(renameItem);
+
+        JMenuItem deleteItem = new JMenuItem("删除");
+        deleteItem.addActionListener(evt -> deleteFile(selectedFile));
+        popupMenu.add(deleteItem);
+
+        popupMenu.addSeparator();
+
+        JMenuItem copyItem = new JMenuItem("复制");
+        copyItem.addActionListener(evt -> copyFile(selectedFile));
+        popupMenu.add(copyItem);
+
+        return popupMenu;
     }
 
     private void openFileReadOnly(File file) {
@@ -224,13 +224,14 @@ public class FileExplorerPanel extends JPanel {
     private void createDirectory(File parentDir) {
         String dirName = JOptionPane.showInputDialog(this, "请输入新文件夹名称:", "新建文件夹", JOptionPane.PLAIN_MESSAGE);
         if (dirName != null && !dirName.trim().isEmpty()) {
-            fileProcessorService.createDirectory(parentDir, dirName);
-            refresh();
+            if (fileProcessorService.createDirectory(parentDir, dirName) != null) {
+                refresh();
+            }
         }
     }
 
     private void renameFile(File oldFile) {
-        String newName = JOptionPane.showInputDialog(this, "请输入新名称:", "重命名", JOptionPane.PLAIN_MESSAGE, null, null, oldFile.getName()).toString();
+        String newName = (String) JOptionPane.showInputDialog(this, "请输入新名称:", "重命名", JOptionPane.PLAIN_MESSAGE, null, null, oldFile.getName());
         if (newName != null && !newName.trim().isEmpty()) {
             if (fileProcessorService.renameFile(oldFile, newName)) {
                 refresh();
@@ -251,8 +252,7 @@ public class FileExplorerPanel extends JPanel {
         }
     }
 
-    private void copyFile() {
-        File selectedFile = fileList.getSelectedValue();
+    private void copyFile(File selectedFile) {
         if (selectedFile != null) {
             ClipboardService.copyToClipboard(selectedFile.getAbsolutePath());
             NotificationUtil.showSuccessDialog(this, "已复制: " + selectedFile.getName());
@@ -280,7 +280,6 @@ public class FileExplorerPanel extends JPanel {
         try {
             File newFile = new File(destDir, fileToCopy.getName());
             if (fileToCopy.isDirectory()) {
-                // 如果是文件夹，则需要递归复制
                 fileProcessorService.copyFile(fileToCopy, newFile);
             } else {
                 Files.copy(fileToCopy.toPath(), newFile.toPath());
@@ -293,9 +292,8 @@ public class FileExplorerPanel extends JPanel {
 
     private void refresh() {
         File currentDir = new File(currentPathLabel.getText().trim());
-        navigateToHistory(currentDir);
+        navigateTo(currentDir, true); // Force refresh
     }
-
 
     private void loadInitialDirectory() {
         File lastDir = prefsService.getFileExplorerLastDirectory();
@@ -307,47 +305,62 @@ public class FileExplorerPanel extends JPanel {
         navigateTo(directory, false);
     }
 
-    private void navigateTo(File directory, boolean isInitial) {
+    private void navigateTo(File directory, boolean isRefresh) {
         if (directory == null || !directory.isDirectory()) {
             return;
         }
 
-        File[] files = directory.listFiles();
-        if (files == null) {
-            // 此处可以显示错误消息
-            return;
-        }
-
-        listModel.clear();
-        Arrays.sort(files, Comparator.comparing(File::getName));
-        Arrays.sort(files, Comparator.comparing(f -> !f.isDirectory())); // 文件夹优先
-
-        for (File file : files) {
-            listModel.addElement(file);
-        }
-
-        currentPathLabel.setText(" " + directory.getAbsolutePath());
-        prefsService.saveFileExplorerLastDirectory(directory);
-
-        if (!isInitial) {
-            // 清除前进历史
-            while (history.size() > historyIndex + 1) {
-                history.remove(history.size() - 1);
+        setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+        new SwingWorker<File[], Void>() {
+            @Override
+            protected File[] doInBackground() {
+                return directory.listFiles();
             }
-            history.add(directory);
-            historyIndex++;
-        } else {
-            history.add(directory);
-            historyIndex = 0;
-        }
-        updateNavigationButtons();
+
+            @Override
+            protected void done() {
+                try {
+                    File[] files = get();
+                    if (files == null) return;
+
+                    Arrays.sort(files, (f1, f2) -> {
+                        if (f1.isDirectory() && !f2.isDirectory()) return -1;
+                        if (!f1.isDirectory() && f2.isDirectory()) return 1;
+                        return f1.getName().compareToIgnoreCase(f2.getName());
+                    });
+
+                    rootNode.removeAllChildren();
+                    for (File file : files) {
+                        rootNode.add(new DefaultMutableTreeNode(file));
+                    }
+                    treeModel.reload(rootNode);
+
+                    currentPathLabel.setText(" " + directory.getAbsolutePath());
+                    prefsService.saveFileExplorerLastDirectory(directory);
+
+                    if (!isRefresh) {
+                        // Update history
+                        while (history.size() > historyIndex + 1) {
+                            history.remove(history.size() - 1);
+                        }
+                        history.add(directory);
+                        historyIndex++;
+                    }
+                    updateNavigationButtons();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                } finally {
+                    setCursor(Cursor.getDefaultCursor());
+                }
+            }
+        }.execute();
     }
 
     private void back() {
         if (historyIndex > 0) {
             historyIndex--;
             File dir = history.get(historyIndex);
-            navigateToHistory(dir);
+            navigateTo(dir, true); // 无痕浏览
         }
     }
 
@@ -355,7 +368,7 @@ public class FileExplorerPanel extends JPanel {
         if (historyIndex < history.size() - 1) {
             historyIndex++;
             File dir = history.get(historyIndex);
-            navigateToHistory(dir);
+            navigateTo(dir, true); // 无痕浏览
         }
     }
 
@@ -367,21 +380,6 @@ public class FileExplorerPanel extends JPanel {
         }
     }
 
-    private void navigateToHistory(File directory) {
-        listModel.clear();
-        File[] files = directory.listFiles();
-        if (files != null) {
-            Arrays.sort(files, Comparator.comparing(File::getName));
-            Arrays.sort(files, Comparator.comparing(f -> !f.isDirectory())); // 文件夹优先
-            for (File file : files) {
-                listModel.addElement(file);
-            }
-        }
-        currentPathLabel.setText(" " + directory.getAbsolutePath());
-        prefsService.saveFileExplorerLastDirectory(directory);
-        updateNavigationButtons();
-    }
-
     private void updateNavigationButtons() {
         backButton.setEnabled(historyIndex > 0);
         forwardButton.setEnabled(historyIndex < history.size() - 1);
@@ -390,26 +388,24 @@ public class FileExplorerPanel extends JPanel {
     }
 
     private void openFile(File file) {
-        String fileName = file.getName();
-        int lastDotIndex = fileName.lastIndexOf('.');
-        if (lastDotIndex > 0) {
-            String extension = fileName.substring(lastDotIndex + 1).toLowerCase();
-            if (AppConfig.ALLOWED_EXTENSIONS.contains(extension)) {
-                controller.onFileSelected(file);
-            }
+        if (file != null && file.isFile()) {
+            controller.onFileSelected(file);
         }
     }
 
-    private static class FileListCellRenderer extends DefaultListCellRenderer {
+    private static class FileTreeCellRenderer extends DefaultTreeCellRenderer {
         private final FileSystemView fileSystemView = FileSystemView.getFileSystemView();
 
         @Override
-        public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
-            super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-            if (value instanceof File) {
-                File file = (File) value;
-                setText(fileSystemView.getSystemDisplayName(file));
-                setIcon(fileSystemView.getSystemIcon(file));
+        public Component getTreeCellRendererComponent(JTree tree, Object value, boolean sel, boolean expanded, boolean leaf, int row, boolean hasFocus) {
+            super.getTreeCellRendererComponent(tree, value, sel, expanded, leaf, row, hasFocus);
+            if (value instanceof DefaultMutableTreeNode) {
+                DefaultMutableTreeNode node = (DefaultMutableTreeNode) value;
+                if (node.getUserObject() instanceof File) {
+                    File file = (File) node.getUserObject();
+                    setText(fileSystemView.getSystemDisplayName(file));
+                    setIcon(fileSystemView.getSystemIcon(file));
+                }
             }
             return this;
         }
