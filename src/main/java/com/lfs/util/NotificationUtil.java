@@ -64,7 +64,7 @@ public class NotificationUtil {
         panel.setBackground(new Color(0, 0, 0, 180));
         JLabel label = new JLabel(message);
         label.setForeground(Color.WHITE);
-        label.setFont(new Font("Arial", Font.BOLD, 14));
+        label.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 14));
         panel.add(label, BorderLayout.CENTER);
         dialog.add(panel);
 
