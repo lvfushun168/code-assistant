@@ -1,31 +1,30 @@
 package com.lfs.ui;
 
-import org.apache.commons.lang3.StringUtils;
+import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
+import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
+import org.fife.ui.rtextarea.RTextScrollPane;
 
 import javax.swing.*;
-import javax.swing.undo.UndoManager;
 import java.awt.*;
 import java.awt.event.ActionEvent;
-import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.io.File;
 
 public class EditorPanel extends JPanel {
 
-    private final JTextArea rightTextArea;
+    private final RSyntaxTextArea rightTextArea;
     private final MainFrameController controller;
     private File currentFile;
-    private final UndoManager undoManager = new UndoManager();
-
+    // RSyntaxTextArea has its own undo manager, so we don't need a separate one.
 
     public EditorPanel(MainFrameController controller) {
         super(new BorderLayout());
         this.controller = controller;
-        this.rightTextArea = new JTextArea();
+        this.rightTextArea = new RSyntaxTextArea();
         initUI();
         setupSaveShortcut();
         setupFindShortcut();
-        setupUndoRedo();
+        // Undo/Redo is handled by RSyntaxTextArea by default
     }
 
     private FindReplaceDialog findReplaceDialog;
@@ -42,9 +41,9 @@ public class EditorPanel extends JPanel {
             @Override
             public void actionPerformed(ActionEvent e) {
                 if (findReplaceDialog == null) {
-                    // Find the top-level window (Frame) to be the owner of the dialog
                     Window owner = SwingUtilities.getWindowAncestor(EditorPanel.this);
                     if (owner instanceof Frame) {
+                        // FindReplaceDialog expects a JTextArea, and RSyntaxTextArea is a subclass, so this should work.
                         findReplaceDialog = new FindReplaceDialog((Frame) owner, rightTextArea);
                     }
                 }
@@ -54,16 +53,13 @@ public class EditorPanel extends JPanel {
     }
 
     private void initUI() {
-        // --- 创建右侧文本区域 ---
         rightTextArea.setEditable(true);
-        rightTextArea.getDocument().addUndoableEditListener(undoManager);
-//        rightTextArea.setLineWrap(true);
-//        rightTextArea.setWrapStyleWord(true);
-        JScrollPane rightScrollPane = new JScrollPane(rightTextArea);
-        TextLineNumber tln = new TextLineNumber(rightTextArea);
-        rightScrollPane.setRowHeaderView(tln);
+        rightTextArea.setCodeFoldingEnabled(true);
+        rightTextArea.setAntiAliasingEnabled(true);
 
-        // --- 将菜单栏和文本区域添加到右侧面板 ---
+        RTextScrollPane rightScrollPane = new RTextScrollPane(rightTextArea);
+        rightScrollPane.setLineNumbersEnabled(true);
+
         add(rightScrollPane, BorderLayout.CENTER);
     }
 
@@ -71,7 +67,6 @@ public class EditorPanel extends JPanel {
         InputMap inputMap = rightTextArea.getInputMap(JComponent.WHEN_FOCUSED);
         ActionMap actionMap = rightTextArea.getActionMap();
 
-        // 使用 getMenuShortcutKeyMaskEx() 来处理 Mac (Command) 和其他系统 (Ctrl)
         KeyStroke keyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_S, Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx());
         String saveActionKey = "saveAction";
 
@@ -84,46 +79,18 @@ public class EditorPanel extends JPanel {
         });
     }
 
-    private void setupUndoRedo() {
-        InputMap inputMap = rightTextArea.getInputMap(JComponent.WHEN_FOCUSED);
-        ActionMap actionMap = rightTextArea.getActionMap();
-
-        // 撤销: Command/Control + Z
-        KeyStroke undoKeyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_Z, Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx());
-        inputMap.put(undoKeyStroke, "undo");
-        actionMap.put("undo", new AbstractAction() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if (undoManager.canUndo()) {
-                    undoManager.undo();
-                }
-            }
-        });
-
-        // 重做: Command/Control + Shift + Z
-        KeyStroke redoKeyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_Z, Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx() | InputEvent.SHIFT_DOWN_MASK);
-        inputMap.put(redoKeyStroke, "redo");
-        actionMap.put("redo", new AbstractAction() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if (undoManager.canRedo()) {
-                    undoManager.redo();
-                }
-            }
-        });
-    }
-
     public String getTextAreaContent() {
         return rightTextArea.getText();
     }
 
-    public JTextArea getTextArea() {
+    public RSyntaxTextArea getTextArea() {
         return rightTextArea;
     }
 
     public void setTextAreaContent(String content) {
+        // RSyntaxTextArea is fast enough that we don't need complex listener management for setting text.
         rightTextArea.setText(content);
-        undoManager.discardAllEdits();
+        rightTextArea.discardAllEdits(); // Clear undo history after setting new content
     }
 
     public File getCurrentFile() {
@@ -132,5 +99,61 @@ public class EditorPanel extends JPanel {
 
     public void setCurrentFile(File currentFile) {
         this.currentFile = currentFile;
+        // Set syntax based on file extension
+        String fileName = currentFile.getName();
+        int lastDot = fileName.lastIndexOf('.');
+        if (lastDot > 0) {
+            String extension = fileName.substring(lastDot + 1);
+            setSyntaxStyle(extension);
+        }
+    }
+
+    private void setSyntaxStyle(String extension) {
+        switch (extension.toLowerCase()) {
+            case "java":
+                rightTextArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JAVA);
+                break;
+            case "py":
+                rightTextArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_PYTHON);
+                break;
+            case "js":
+                rightTextArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JAVASCRIPT);
+                break;
+            case "ts":
+                rightTextArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_TYPESCRIPT);
+                break;
+            case "html":
+            case "htm":
+                rightTextArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_HTML);
+                break;
+            case "css":
+                rightTextArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_CSS);
+                break;
+            case "xml":
+                rightTextArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_XML);
+                break;
+            case "json":
+                rightTextArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JSON);
+                break;
+            case "sql":
+                rightTextArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_SQL);
+                break;
+            case "md":
+                rightTextArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_MARKDOWN);
+                break;
+            case "sh":
+                rightTextArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_UNIX_SHELL);
+                break;
+            case "bat":
+                rightTextArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_WINDOWS_BATCH);
+                break;
+            case "yaml":
+            case "yml":
+                rightTextArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_YAML);
+                break;
+            default:
+                rightTextArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_NONE);
+                break;
+        }
     }
 }

@@ -148,6 +148,7 @@ public class MainFrame extends JFrame {
         EditorPanel newEditorPanel = new EditorPanel(controller);
         newEditorPanel.setCurrentFile(file);
         newEditorPanel.setTextAreaContent(content);
+        newEditorPanel.getTextArea().setCaretPosition(0);
 
         // 添加到 tabbedPane
         addTab(file.getName(), newEditorPanel);

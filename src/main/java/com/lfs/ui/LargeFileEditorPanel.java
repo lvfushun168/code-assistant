@@ -1,12 +1,13 @@
 package com.lfs.ui;
 
 import com.lfs.util.NotificationUtil;
+import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
+import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
+import org.fife.ui.rtextarea.RTextScrollPane;
 
 import javax.swing.*;
-import javax.swing.undo.UndoManager;
 import java.awt.*;
 import java.awt.event.ActionEvent;
-import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.io.File;
 import java.io.FileInputStream;
@@ -15,38 +16,27 @@ import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import javax.swing.AbstractAction;
-import javax.swing.ActionMap;
-import javax.swing.InputMap;
-import javax.swing.JComponent;
-import javax.swing.KeyStroke;
-import java.awt.Window;
-import javax.swing.SwingUtilities;
-
 
 public class LargeFileEditorPanel extends JPanel {
 
-    private final JTextArea textArea;
-    private final JScrollPane scrollPane;
+    private final RSyntaxTextArea textArea;
     private final JProgressBar progressBar;
     private final JLabel statusLabel;
-    private final JPanel statusPanel;
     private File currentFile;
     private FindReplaceDialog findReplaceDialog;
-    private final UndoManager undoManager = new UndoManager();
 
     public LargeFileEditorPanel() {
         super(new BorderLayout());
-        textArea = new JTextArea();
-        textArea.setLineWrap(false);
-        textArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
-        textArea.setEditable(false); // 最初不可编辑，直到文件加载完成
-        textArea.getDocument().addUndoableEditListener(undoManager);
+        textArea = new RSyntaxTextArea();
+        textArea.setEditable(false); // Initially not editable
+        textArea.setCodeFoldingEnabled(true);
+        textArea.setAntiAliasingEnabled(true);
 
-        scrollPane = new JScrollPane(textArea);
+        RTextScrollPane scrollPane = new RTextScrollPane(textArea);
+        scrollPane.setLineNumbersEnabled(true);
         add(scrollPane, BorderLayout.CENTER);
 
-        statusPanel = new JPanel(new BorderLayout());
+        JPanel statusPanel = new JPanel(new BorderLayout());
         progressBar = new JProgressBar();
         progressBar.setVisible(false);
         statusLabel = new JLabel(" ");
@@ -62,7 +52,7 @@ public class LargeFileEditorPanel extends JPanel {
         InputMap inputMap = textArea.getInputMap(JComponent.WHEN_FOCUSED);
         ActionMap actionMap = textArea.getActionMap();
 
-        // 保存: Command/Control + S
+        // Save: Command/Control + S
         KeyStroke saveKeyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_S, Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx());
         inputMap.put(saveKeyStroke, "save");
         actionMap.put("save", new AbstractAction() {
@@ -72,7 +62,7 @@ public class LargeFileEditorPanel extends JPanel {
             }
         });
 
-        // 查找: Command/Control + F
+        // Find: Command/Control + F
         KeyStroke findKeyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_F, Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx());
         inputMap.put(findKeyStroke, "find");
         actionMap.put("find", new AbstractAction() {
@@ -88,51 +78,26 @@ public class LargeFileEditorPanel extends JPanel {
             }
         });
 
-        // 撤销: Command/Control + Z
-        KeyStroke undoKeyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_Z, Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx());
-        inputMap.put(undoKeyStroke, "undo");
-        actionMap.put("undo", new AbstractAction() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if (undoManager.canUndo()) {
-                    undoManager.undo();
-                }
-            }
-        });
-
-        // 重做: Command/Control + Shift + Z
-        KeyStroke redoKeyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_Z, Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx() | InputEvent.SHIFT_DOWN_MASK);
-        inputMap.put(redoKeyStroke, "redo");
-        actionMap.put("redo", new AbstractAction() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if (undoManager.canRedo()) {
-                    undoManager.redo();
-                }
-            }
-        });
+        // Undo/Redo are handled by RSyntaxTextArea's default keymap
     }
 
     public void loadFile(File file) {
-        this.currentFile = file;
-        undoManager.discardAllEdits();
-        textArea.setText(""); // 清除之前的内容
+        setCurrentFile(file);
+        textArea.discardAllEdits();
+        textArea.setText(""); // Clear previous content
         statusLabel.setText("正在加载 " + file.getName() + "...");
         progressBar.setValue(0);
         progressBar.setVisible(true);
-        long length = file.length(); // 大文件如果在100kb-10mb之间，这里会卡半天，需要进一步细分
-        byte[] buffer;
-        long sleep;
-        if (length > 100 * 1024 && length < 10 * 1024 * 1024) {
-            buffer = new byte[2 * 1024]; // 2kb buffer
-            sleep = 10L;
-        }else if (length > 10 * 1024 * 1024) {
-            buffer = new byte[64 * 1024]; // 64kb buffer
-            sleep = 3L;
-        }else {
-            buffer = new byte[1024]; // 1KB buffer
-            sleep = 3L;
-        }
+        long length = file.length();
+
+        // Buffer size capped at 32KB to prevent long-blocking UI updates.
+        final int MIN_BUFFER_SIZE = 4 * 1024; // 4KB
+        final int MAX_BUFFER_SIZE = 32 * 1024; // 32KB
+        int bufferSize = (int) Math.max(MIN_BUFFER_SIZE, Math.min(MAX_BUFFER_SIZE, length / 200));
+        final byte[] buffer = new byte[bufferSize];
+
+        // A small delay to yield to the UI thread.
+        final long sleep = 2L;
         setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 
         new SwingWorker<Void, ProgressChunk>() {
@@ -147,7 +112,6 @@ public class LargeFileEditorPanel extends JPanel {
                         totalBytesRead += bytesRead;
                         int progress = (int) ((totalBytesRead * 100) / fileLength);
                         publish(new ProgressChunk(chunk, progress));
-                        // 节流，防止UI线程被过多事件淹没
                         Thread.sleep(sleep);
                     }
                 }
@@ -157,6 +121,7 @@ public class LargeFileEditorPanel extends JPanel {
             @Override
             protected void process(List<ProgressChunk> chunks) {
                 for (ProgressChunk chunk : chunks) {
+                    // Appending to RSyntaxTextArea should be faster
                     textArea.append(chunk.getText());
                     progressBar.setValue(chunk.getProgress());
                 }
@@ -165,9 +130,9 @@ public class LargeFileEditorPanel extends JPanel {
             @Override
             protected void done() {
                 try {
-                    get(); // 检查异常
+                    get(); // Check for exceptions
                     textArea.setEditable(true);
-                    textArea.setCaretPosition(0); // 将光标移动到开头
+                    textArea.setCaretPosition(0); // Move caret to the beginning
                     statusLabel.setText("加载完成: " + file.getName());
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -181,7 +146,7 @@ public class LargeFileEditorPanel extends JPanel {
         }.execute();
     }
 
-    public JTextArea getTextArea() {
+    public RSyntaxTextArea getTextArea() {
         return textArea;
     }
 
@@ -191,15 +156,14 @@ public class LargeFileEditorPanel extends JPanel {
             return;
         }
 
-        // 在保存操作期间显示加载光标
         setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
         statusLabel.setText("正在保存 " + currentFile.getName() + "...");
 
-        // 使用 SwingWorker 在后台线程中执行文件写入操作
         new SwingWorker<Void, Void>() {
             @Override
             protected Void doInBackground() throws Exception {
                 try (OutputStreamWriter writer = new OutputStreamWriter(new FileOutputStream(currentFile), StandardCharsets.UTF_8)) {
+                    // This can be slow for huge files, but saving is expected to take time.
                     writer.write(textArea.getText());
                 }
                 return null;
@@ -208,7 +172,7 @@ public class LargeFileEditorPanel extends JPanel {
             @Override
             protected void done() {
                 try {
-                    get(); // 检查在 doInBackground 中是否有异常抛出
+                    get();
                     statusLabel.setText("文件已保存: " + currentFile.getName());
                     NotificationUtil.showSaveSuccess(LargeFileEditorPanel.this);
                 } catch (Exception e) {
@@ -216,7 +180,6 @@ public class LargeFileEditorPanel extends JPanel {
                     statusLabel.setText("保存失败: " + e.getMessage());
                     NotificationUtil.showErrorDialog(LargeFileEditorPanel.this, "保存文件失败: " + e.getMessage());
                 } finally {
-                    // 恢复默认光标
                     setCursor(Cursor.getDefaultCursor());
                 }
             }
@@ -233,10 +196,66 @@ public class LargeFileEditorPanel extends JPanel {
 
     public void setCurrentFile(File currentFile) {
         this.currentFile = currentFile;
+        // Set syntax based on file extension
+        String fileName = currentFile.getName();
+        int lastDot = fileName.lastIndexOf('.');
+        if (lastDot > 0) {
+            String extension = fileName.substring(lastDot + 1);
+            setSyntaxStyle(extension);
+        }
+    }
+    
+    private void setSyntaxStyle(String extension) {
+        switch (extension.toLowerCase()) {
+            case "java":
+                textArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JAVA);
+                break;
+            case "py":
+                textArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_PYTHON);
+                break;
+            case "js":
+                textArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JAVASCRIPT);
+                break;
+            case "ts":
+                textArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_TYPESCRIPT);
+                break;
+            case "html":
+            case "htm":
+                textArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_HTML);
+                break;
+            case "css":
+                textArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_CSS);
+                break;
+            case "xml":
+                textArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_XML);
+                break;
+            case "json":
+                textArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JSON);
+                break;
+            case "sql":
+                textArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_SQL);
+                break;
+            case "md":
+                textArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_MARKDOWN);
+                break;
+            case "sh":
+                textArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_UNIX_SHELL);
+                break;
+            case "bat":
+                textArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_WINDOWS_BATCH);
+                break;
+            case "yaml":
+            case "yml":
+                textArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_YAML);
+                break;
+            default:
+                textArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_NONE);
+                break;
+        }
     }
 }
 
-// 用于发布文本块和进度的辅助类
+// Helper class for publishing text chunks and progress
 class ProgressChunk {
     private final String text;
     private final int progress;
