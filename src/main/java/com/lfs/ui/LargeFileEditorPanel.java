@@ -32,6 +32,14 @@ public class LargeFileEditorPanel extends JPanel {
         textArea.setCodeFoldingEnabled(true);
         textArea.setAntiAliasingEnabled(true);
 
+        try {
+            java.io.InputStream in = getClass().getResourceAsStream("/org/fife/ui/rsyntaxtextarea/themes/dark.xml");
+            org.fife.ui.rsyntaxtextarea.Theme theme = org.fife.ui.rsyntaxtextarea.Theme.load(in);
+            theme.apply(textArea);
+        } catch (java.io.IOException e) {
+            e.printStackTrace();
+        }
+
         RTextScrollPane scrollPane = new RTextScrollPane(textArea);
         scrollPane.setLineNumbersEnabled(true);
         add(scrollPane, BorderLayout.CENTER);

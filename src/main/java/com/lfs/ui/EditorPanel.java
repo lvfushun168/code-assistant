@@ -57,6 +57,15 @@ public class EditorPanel extends JPanel {
         rightTextArea.setCodeFoldingEnabled(true);
         rightTextArea.setAntiAliasingEnabled(true);
 
+        try {
+            java.io.InputStream in = getClass().getResourceAsStream("/org/fife/ui/rsyntaxtextarea/themes/dark.xml");
+            org.fife.ui.rsyntaxtextarea.Theme theme = org.fife.ui.rsyntaxtextarea.Theme.load(in);
+            theme.apply(rightTextArea);
+        } catch (java.io.IOException e) {
+            // In case of an error, we can log it, but the editor will still be functional with default colors.
+            e.printStackTrace();
+        }
+
         RTextScrollPane rightScrollPane = new RTextScrollPane(rightTextArea);
         rightScrollPane.setLineNumbersEnabled(true);
 
