@@ -127,37 +127,95 @@
                     </execution>
                 </executions>
             </plugin>
-            <!-- 打包成 .app -->
+            <!-- Launch4j Plugin, 用于创建 Windows .exe 文件 -->
             <plugin>
-                <groupId>org.panteleyev</groupId>
-                <artifactId>jpackage-maven-plugin</artifactId>
-                <version>1.5.0</version>
+                <groupId>com.akathist.maven.plugins.launch4j</groupId>
+                <artifactId>launch4j-maven-plugin</artifactId>
+                <version>2.5.0</version>
                 <executions>
                     <execution>
+                        <id>l4j-clui</id>
                         <phase>package</phase>
                         <goals>
-                            <goal>jpackage</goal>
+                            <goal>launch4j</goal>
                         </goals>
                         <configuration>
-                            <name>代码协作助手</name>
-                            <input>${project.build.directory}</input>
-                            <mainClass>com.lfs.CodeAssistant</mainClass>
-                            <mainJar>${project.build.finalName}.jar</mainJar>
-                            <appVersion>${project.version}</appVersion>
-                            <icon>src/main/resources/icons/app.icns</icon>
-                            <type>APP_IMAGE</type>
-                            <destination>dist</destination>
-                            <javaOptions>
-                                <option>-Dapple.laf.useScreenMenuBar=true</option>
-                                <option>-Dapple.awt.application.name=CodeAssistant</option>
-                            </javaOptions>
-                            <!-- 为应用添加文件关联 -->
-                            <fileAssociations>src/main/resources/file-associations.properties</fileAssociations>
+                            <headerType>gui</headerType>
+                            <jar>${project.build.directory}/${project.build.finalName}.jar</jar>
+                            <outfile>${project.build.directory}/CodeAssistant.exe</outfile>
+                            <icon>src/main/resources/icons/app.ico</icon>
+                            <errTitle>CodeAssistant</errTitle>
+                            <classPath>
+                                <mainClass>com.lfs.CodeAssistant</mainClass>
+                                <addDependencies>false</addDependencies>
+                                <preCp>anything</preCp>
+                            </classPath>
+                            <jre>
+                                <minVersion>11</minVersion>
+                                <initialHeapSize>128</initialHeapSize>
+                                <maxHeapSize>1024</maxHeapSize>
+                            </jre>
+                            <versionInfo>
+                                <fileVersion>1.0.0.0</fileVersion>
+                                <txtFileVersion>${project.version}</txtFileVersion>
+                                <fileDescription>Code Assistant</fileDescription>
+                                <copyright>lfs</copyright>
+                                <productVersion>1.0.0.0</productVersion>
+                                <txtProductVersion>${project.version}</txtProductVersion>
+                                <productName>CodeAssistant</productName>
+                                <internalName>CodeAssistant</internalName>
+                                <originalFilename>CodeAssistant.exe</originalFilename>
+                            </versionInfo>
                         </configuration>
                     </execution>
                 </executions>
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>mac-package</id>
+            <activation>
+                <os>
+                    <family>mac</family>
+                </os>
+            </activation>
+            <build>
+                <plugins>
+                    <!-- 打包成 .app -->
+                    <plugin>
+                        <groupId>org.panteleyev</groupId>
+                        <artifactId>jpackage-maven-plugin</artifactId>
+                        <version>1.5.0</version>
+                        <executions>
+                            <execution>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>jpackage</goal>
+                                </goals>
+                                <configuration>
+                                    <name>代码协作助手</name>
+                                    <input>${project.build.directory}</input>
+                                    <mainClass>com.lfs.CodeAssistant</mainClass>
+                                    <mainJar>${project.build.finalName}.jar</mainJar>
+                                    <appVersion>${project.version}</appVersion>
+                                    <icon>src/main/resources/icons/app.icns</icon>
+                                    <type>APP_IMAGE</type>
+                                    <destination>dist</destination>
+                                    <javaOptions>
+                                        <option>-Dapple.laf.useScreenMenuBar=true</option>
+                                        <option>-Dapple.awt.application.name=CodeAssistant</option>
+                                    </javaOptions>
+                                    <!-- 为应用添加文件关联 -->
+                                    <fileAssociations>src/main/resources/file-associations.properties</fileAssociations>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 
 </project>
