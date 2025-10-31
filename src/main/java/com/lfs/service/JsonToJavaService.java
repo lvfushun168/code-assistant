@@ -35,7 +35,7 @@ public class JsonToJavaService {
 
             return result.toString();
         } catch (JSONException e) {
-            return "Error: Invalid JSON format.";
+            return "Error: Json格式不正确";
         }
     }
 
@@ -57,6 +57,9 @@ public class JsonToJavaService {
         if (value instanceof String) {
             if (isDate((String) value)) {
                 String format = detectDateFormat((String) value);
+                if ("yyyy-MM-dd".equals(format)) {
+                    return new Pair<>("Date", "@com.fasterxml.jackson.annotation.JsonFormat(pattern = \"yyyy-MM-dd\")");
+                }
                 return new Pair<>("LocalDateTime", "@com.fasterxml.jackson.annotation.JsonFormat(pattern = \"" + format + "\")");
             }
             return new Pair<>("String", null);

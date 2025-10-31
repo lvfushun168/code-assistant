@@ -84,7 +84,7 @@ public class MainFrame extends JFrame {
                     JsonToJavaService jsonToJavaService = new JsonToJavaService();
                     String javaCode = jsonToJavaService.convert(content);
                     if (javaCode.startsWith("Error:")) {
-                        NotificationUtil.showErrorDialog(this, javaCode);
+                        NotificationUtil.showErrorDialog(this, javaCode.replace("Error: ", ""));
                         return;
                     }
                     if (editorPanel.getTextArea().getSelectedText() != null) {
