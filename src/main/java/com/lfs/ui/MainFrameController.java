@@ -185,7 +185,7 @@ public class MainFrameController {
                         String content = get();
                         mainFrame.openFileInTab(file, content);
                     } catch (Exception e) {
-                        NotificationUtil.showErrorDialog(mainFrame, "无法读取文件: " + e.getMessage());
+                        NotificationUtil.showErrorDialog(mainFrame, "无法读取此文件");
                         e.printStackTrace();
                     } finally {
                         mainFrame.setCursor(Cursor.getDefaultCursor());
