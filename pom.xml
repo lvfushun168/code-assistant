@@ -142,7 +142,7 @@
                         <configuration>
                             <headerType>gui</headerType>
                             <jar>${project.build.directory}/${project.build.finalName}.jar</jar>
-                            <outfile>${project.build.directory}/CodeAssistant.exe</outfile>
+                            <outfile>${project.build.directory}/代码协作助手.exe</outfile>
                             <icon>src/main/resources/icons/app.ico</icon>
                             <errTitle>CodeAssistant</errTitle>
                             <classPath>
