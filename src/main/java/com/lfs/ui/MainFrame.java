@@ -1,6 +1,7 @@
 package com.lfs.ui;
 
 import cn.hutool.json.JSONUtil;
+import com.lfs.service.JavaToJsonService;
 import com.lfs.service.UserPreferencesService;
 import com.lfs.util.NotificationUtil;
 
@@ -72,6 +73,29 @@ public class MainFrame extends JFrame {
         JMenuItem json2java = new JMenuItem("转为Java对象");
         trans2CodeMenu.add(json2java);
         JMenu trans2JsonMenu = new JMenu("代码转JSON..");
+        JMenuItem bean2JSon = new JMenuItem("Java对象转为JSON");
+        bean2JSon.addActionListener(e -> {
+            Component selectedComponent = getActiveEditorPanel();
+            if (selectedComponent instanceof EditorPanel) {
+                EditorPanel editorPanel = (EditorPanel) selectedComponent;
+                String content = editorPanel.getTextArea().getSelectedText();
+                if (content == null || content.isEmpty()) {
+                    content = editorPanel.getTextAreaContent();
+                }
+                try {
+                    JavaToJsonService javaToJsonService = new JavaToJsonService();
+                    String json = javaToJsonService.transformJavaBean(content);
+                    if (editorPanel.getTextArea().getSelectedText() != null) {
+                        editorPanel.getTextArea().replaceSelection(json);
+                    } else {
+                        editorPanel.setTextAreaContent(json);
+                    }
+                } catch (Exception ex) {
+                    NotificationUtil.showErrorDialog(this, "转换失败: " + ex.getMessage());
+                }
+            }
+        });
+        trans2JsonMenu.add(bean2JSon);
         JMenuItem formatJsonMenuItem = new JMenuItem("格式化JSON");
         formatJsonMenuItem.addActionListener(e -> {
             Component selectedComponent = getActiveEditorPanel();
