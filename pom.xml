@@ -163,7 +163,7 @@
                             <versionInfo>
                                 <fileVersion>1.0.0.0</fileVersion>
                                 <txtFileVersion>${project.version}</txtFileVersion>
-                                <fileDescription>Code Assistant</fileDescription>
+                                <fileDescription>LFS代码协作助手</fileDescription>
                                 <copyright>lfs</copyright>
                                 <productVersion>1.0.0.0</productVersion>
                                 <txtProductVersion>${project.version}</txtProductVersion>
