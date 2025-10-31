@@ -15,6 +15,8 @@ import javax.swing.tree.TreePath;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -54,7 +56,7 @@ public class FileExplorerPanel extends JPanel {
     }
 
     private void initUI() {
-        // Navigation Toolbar
+        // 导航工具栏
         JToolBar toolBar = new JToolBar();
         toolBar.setFloatable(false);
         toolBar.setLayout(new BorderLayout());
@@ -77,7 +79,7 @@ public class FileExplorerPanel extends JPanel {
 
         add(toolBar, BorderLayout.NORTH);
 
-        // File Tree
+        // 文件树
         fileTree.setRootVisible(false);
         fileTree.setShowsRootHandles(true);
         fileTree.setCellRenderer(new FileTreeCellRenderer());
@@ -124,17 +126,51 @@ public class FileExplorerPanel extends JPanel {
                 }
             }
         });
+
+        fileTree.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                // 对于 macOS，检查 Command 键；对于其他系统，检查 Control 键
+                boolean isCopy = (e.getKeyCode() == KeyEvent.VK_C) && ((e.getModifiersEx() & Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx()) != 0);
+                boolean isPaste = (e.getKeyCode() == KeyEvent.VK_V) && ((e.getModifiersEx() & Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx()) != 0);
+
+                if (isCopy) {
+                    TreePath path = fileTree.getSelectionPath();
+                    if (path != null) {
+                        DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
+                        File selectedFile = (File) node.getUserObject();
+                        copyFile(selectedFile);
+                    }
+                } else if (isPaste) {
+                    pasteFile();
+                } else if (e.getKeyCode() == KeyEvent.VK_F2) {
+                    TreePath path = fileTree.getSelectionPath();
+                    if (path != null) {
+                        DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
+                        File selectedFile = (File) node.getUserObject();
+                        renameFile(selectedFile);
+                    }
+                } else if (e.getKeyCode() == KeyEvent.VK_BACK_SPACE || e.getKeyCode() == KeyEvent.VK_DELETE) {
+                    TreePath path = fileTree.getSelectionPath();
+                    if (path != null) {
+                        DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
+                        File selectedFile = (File) node.getUserObject();
+                        deleteFile(selectedFile);
+                    }
+                }
+            }
+        });
     }
 
     private void showPopupMenu(MouseEvent e) {
         TreePath path = fileTree.getPathForLocation(e.getX(), e.getY());
 
         if (path == null) {
-            // Background click
+            // 背景点击
             JPopupMenu popupMenu = createBackgroundPopupMenu();
             popupMenu.show(e.getComponent(), e.getX(), e.getY());
         } else {
-            // Item click
+            // 项目点击
             fileTree.setSelectionPath(path);
             DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
             File selectedFile = (File) node.getUserObject();
@@ -279,6 +315,10 @@ public class FileExplorerPanel extends JPanel {
 
         try {
             File newFile = new File(destDir, fileToCopy.getName());
+            if (newFile.exists()) {
+                newFile = getUniqueFile(destDir, fileToCopy);
+            }
+
             if (fileToCopy.isDirectory()) {
                 fileProcessorService.copyFile(fileToCopy, newFile);
             } else {
@@ -291,9 +331,32 @@ public class FileExplorerPanel extends JPanel {
         }
     }
 
+    private File getUniqueFile(File destDir, File fileToCopy) {
+        String name = fileToCopy.getName();
+        String newName;
+        int copySuffix = 1;
+
+        int dotIndex = name.lastIndexOf('.');
+        String baseName = (dotIndex == -1) ? name : name.substring(0, dotIndex);
+        String extension = (dotIndex == -1) ? "" : name.substring(dotIndex);
+
+        while (true) {
+            if (copySuffix == 1) {
+                newName = baseName + "_copy" + extension;
+            } else {
+                newName = baseName + "_copy" + copySuffix + extension;
+            }
+            File newFile = new File(destDir, newName);
+            if (!newFile.exists()) {
+                return newFile;
+            }
+            copySuffix++;
+        }
+    }
+
     private void refresh() {
         File currentDir = new File(currentPathLabel.getText().trim());
-        navigateTo(currentDir, true); // Force refresh
+        navigateTo(currentDir, true); // 强制刷新
     }
 
     private void loadInitialDirectory() {
@@ -340,7 +403,7 @@ public class FileExplorerPanel extends JPanel {
                     prefsService.saveFileExplorerLastDirectory(directory);
 
                     if (!isRefresh) {
-                        // Update history
+                        // 更新历史记录
                         while (history.size() > historyIndex + 1) {
                             history.remove(history.size() - 1);
                         }
