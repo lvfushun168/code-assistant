@@ -1,5 +1,6 @@
 package com.lfs.ui;
 
+import cn.hutool.db.sql.SqlUtil;
 import cn.hutool.json.JSONUtil;
 import com.lfs.service.JavaToJsonService;
 import com.lfs.service.JsonToJavaService;
@@ -136,6 +137,24 @@ public class MainFrame extends JFrame {
                 }
             }
         });
+        // --- 创建“SQL”菜单 ---
+        JMenu sqlMenu = new JMenu("<html><u>SQL</u></html>");
+        JMenuItem sqlFormatMenuItem = new JMenuItem("美化SQL");
+        sqlFormatMenuItem.addActionListener(e -> {
+            Component selectedComponent = getActiveEditorPanel();
+            if (selectedComponent instanceof EditorPanel) {
+                EditorPanel editorPanel = (EditorPanel) selectedComponent;
+                String sql = editorPanel.getTextAreaContent();
+                try {
+                    String formattedSql = SqlUtil.formatSql(sql);
+                    editorPanel.setTextAreaContent(formattedSql);
+                } catch (Exception ex) {
+                    NotificationUtil.showErrorDialog(this,"SQL 格式不正确");
+                }
+            }
+        });
+        sqlMenu.add(sqlFormatMenuItem);
+
         // --- 创建“账户”菜单 ---
         JMenu accountMenu = new JMenu("<html><u>云账户</u></html>");
         JMenuItem signupMenuItem = new JMenuItem("注册...");
@@ -158,6 +177,7 @@ public class MainFrame extends JFrame {
         menuBar.add(saveMenu);
         menuBar.add(importMenu);
         menuBar.add(jsonMenu);
+        menuBar.add(sqlMenu);
         menuBar.add(accountMenu);
 
         rightPanel.add(menuBar, BorderLayout.NORTH);
