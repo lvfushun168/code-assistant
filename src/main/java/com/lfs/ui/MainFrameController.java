@@ -10,6 +10,8 @@ import java.awt.*;
 import java.io.File;
 import java.io.IOException;
 
+import static com.lfs.config.AppConfig.ALLOWED_EXTENSIONS;
+
 public class MainFrameController {
 
     private final FileProcessorService fileProcessorService;
@@ -167,6 +169,15 @@ public class MainFrameController {
     }
 
     public void onFileSelected(File file) {
+        String name = file.getName();
+        String[] split = name.split("\\.");
+        if (split.length > 1) {
+            String extension = split[split.length - 1];
+            if (!ALLOWED_EXTENSIONS.contains(extension)) {
+                NotificationUtil.showErrorDialog(mainFrame, "不支持的文件格式: " + extension);
+                return;
+            }
+        }
         final long LARGE_FILE_THRESHOLD = 10 * 1024 * 1024; // 10MB
 
         if (file.length() > LARGE_FILE_THRESHOLD) {
