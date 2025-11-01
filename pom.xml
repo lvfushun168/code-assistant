@@ -55,11 +55,6 @@
             <artifactId>mybatis-plus-annotation</artifactId>
             <version>3.5.2</version>
         </dependency>
-        <dependency>
-            <groupId>org.mybatis</groupId>
-            <artifactId>mybatis</artifactId>
-            <version>3.5.10</version>
-        </dependency>
 
         <!-- Spring Core, required by mybatis-plus-core for reflection utilities -->
         <dependency>
