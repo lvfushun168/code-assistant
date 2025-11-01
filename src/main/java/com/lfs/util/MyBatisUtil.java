@@ -1,9 +1,10 @@
 package com.lfs.util;
 
 import org.apache.ibatis.io.Resources;
+import com.baomidou.mybatisplus.core.MybatisSqlSessionFactoryBuilder;
+import org.apache.ibatis.io.Resources;
 import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
-import org.apache.ibatis.session.SqlSessionFactoryBuilder;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -19,7 +20,7 @@ public class MyBatisUtil {
         try {
             String resource = "mybatis-config.xml";
             InputStream inputStream = Resources.getResourceAsStream(resource);
-            sqlSessionFactory = new SqlSessionFactoryBuilder().build(inputStream);
+            sqlSessionFactory = new MybatisSqlSessionFactoryBuilder().build(inputStream);
         } catch (IOException e) {
             e.printStackTrace(); // 实际项目中应使用日志框架
         }

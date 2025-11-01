@@ -4,12 +4,14 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.lfs.dao.UserMapper;
 import com.lfs.domain.User;
 import com.lfs.util.MyBatisUtil;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.ibatis.session.SqlSession;
 import org.mindrot.jbcrypt.BCrypt;
 
 /**
  * 账户服务类，处理注册、登录等业务逻辑
  */
+@Slf4j
 public class AccountService {
 
     /**
@@ -45,7 +47,7 @@ public class AccountService {
             sqlSession.commit(); // 提交事务
             return result > 0;
         } catch (Exception e) {
-            e.printStackTrace(); // 实际项目中应使用日志框架
+            log.error("注册失败", e);
             return false;
         }
     }

@@ -61,6 +61,13 @@
             <version>3.5.10</version>
         </dependency>
 
+        <!-- Spring Core, required by mybatis-plus-core for reflection utilities -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-core</artifactId>
+            <version>5.3.23</version>
+        </dependency>
+
         <!-- HikariCP 连接池 -->
         <dependency>
             <groupId>com.zaxxer</groupId>
