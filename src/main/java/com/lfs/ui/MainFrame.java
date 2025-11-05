@@ -31,6 +31,31 @@ public class MainFrame extends JFrame {
     private void initUI() {
         // --- 窗口基础设置 ---
         setTitle("代码协作助手");
+
+        // 设置任务栏和窗口图标
+        try {
+            // 使用PNG格式，因为Java对ICO格式的读取兼容性较差
+            java.net.URL iconURL = getClass().getResource("/icons/app.png");
+            if (iconURL != null) {
+                java.awt.Image image = javax.imageio.ImageIO.read(iconURL);
+
+                // 尝试使用Taskbar API (Java 9+)设置任务栏图标
+                try {
+                    final java.awt.Taskbar taskbar = java.awt.Taskbar.getTaskbar();
+                    if (taskbar.isSupported(java.awt.Taskbar.Feature.ICON_IMAGE)) {
+                        taskbar.setIconImage(image);
+                    }
+                } catch (UnsupportedOperationException e) {
+                    // Taskbar API不受支持时，下面的 setIconImage 会作为备用方案
+                }
+
+                // 同时设置JFrame的图标，用于窗口左上角及Taskbar API不支持时的备用
+                setIconImage(image);
+            }
+        } catch (Exception e) {
+            // 图标加载失败, 打印错误但程序应继续运行
+            e.printStackTrace();
+        }
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
         // --- 加载上次的窗口位置和大小 ---
