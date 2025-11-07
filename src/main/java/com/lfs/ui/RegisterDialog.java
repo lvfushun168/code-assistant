@@ -1,5 +1,6 @@
 package com.lfs.ui;
 
+import com.lfs.domain.BackendResponse;
 import com.lfs.service.AccountService;
 
 import javax.swing.*;
@@ -127,12 +128,12 @@ public class RegisterDialog extends JDialog {
         }
 
         try {
-            boolean success = accountService.register(username, password);
-            if (success) {
+            BackendResponse<Object> response = accountService.register(username, password);
+            if (response.getCode() == 200) {
                 JOptionPane.showMessageDialog(this, "注册成功！", "成功", JOptionPane.INFORMATION_MESSAGE);
                 setVisible(false);
             } else {
-                JOptionPane.showMessageDialog(this, "注册失败，用户名可能已存在或服务器错误。", "错误", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "注册失败: " + response.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
                 refreshCaptcha();
             }
         } catch (Exception ex) {

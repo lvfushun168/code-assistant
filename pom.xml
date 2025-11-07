@@ -37,38 +37,7 @@
             <version>5.8.2</version>
         </dependency>
 
-        <!-- MySQL 数据库连接器 -->
-        <dependency>
-            <groupId>mysql</groupId>
-            <artifactId>mysql-connector-java</artifactId>
-            <version>8.0.28</version>
-        </dependency>
 
-        <!-- MyBatis Plus 核心 -->
-        <dependency>
-            <groupId>com.baomidou</groupId>
-            <artifactId>mybatis-plus-core</artifactId>
-            <version>3.5.2</version>
-        </dependency>
-        <dependency>
-            <groupId>com.baomidou</groupId>
-            <artifactId>mybatis-plus-annotation</artifactId>
-            <version>3.5.2</version>
-        </dependency>
-
-        <!-- Spring Core, required by mybatis-plus-core for reflection utilities -->
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-core</artifactId>
-            <version>5.3.23</version>
-        </dependency>
-
-        <!-- HikariCP 连接池 -->
-        <dependency>
-            <groupId>com.zaxxer</groupId>
-            <artifactId>HikariCP</artifactId>
-            <version>5.0.1</version>
-        </dependency>
 
         <!-- SLF4J 日志 -->
         <dependency>
