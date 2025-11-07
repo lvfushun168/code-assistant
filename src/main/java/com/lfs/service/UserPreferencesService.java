@@ -18,10 +18,27 @@ public class UserPreferencesService {
     private static final String WINDOW_WIDTH_KEY = "windowWidth";
     private static final String WINDOW_HEIGHT_KEY = "windowHeight";
     private static final String FILE_EXPLORER_LAST_DIRECTORY_KEY = "fileExplorerLastDirectory";
+    private static final String AUTH_TOKEN_KEY = "authToken";
 
     public UserPreferencesService() {
         // 使用 userNodeForPackage 确保偏好设置按用户存储
         this.prefs = Preferences.userNodeForPackage(UserPreferencesService.class);
+    }
+
+    public void saveToken(String token) {
+        if (token != null && !token.isEmpty()) {
+            prefs.put(AUTH_TOKEN_KEY, token);
+        } else {
+            prefs.remove(AUTH_TOKEN_KEY);
+        }
+    }
+
+    public String getToken() {
+        return prefs.get(AUTH_TOKEN_KEY, null);
+    }
+
+    public void clearToken() {
+        prefs.remove(AUTH_TOKEN_KEY);
     }
 
     /**

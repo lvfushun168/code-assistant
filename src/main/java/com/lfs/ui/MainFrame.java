@@ -189,8 +189,21 @@ public class MainFrame extends JFrame {
         });
         accountMenu.add(signupMenuItem);
         JMenuItem loginMenuItem = new JMenuItem("登入...");
+        loginMenuItem.addActionListener(e -> {
+            LoginDialog loginDialog = new LoginDialog(this);
+            loginDialog.setVisible(true);
+        });
         accountMenu.add(loginMenuItem);
         JMenuItem logoutMenuItem = new JMenuItem("登出...");
+        logoutMenuItem.addActionListener(e -> {
+            int response = JOptionPane.showConfirmDialog(this, "您确定要登出吗？", "确认", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+            if (response == JOptionPane.YES_OPTION) {
+                preferencesService.clearToken();
+                // 重启应用
+                dispose();
+                com.lfs.CodeAssistant.main(new String[]{});
+            }
+        });
         accountMenu.add(logoutMenuItem);
 
         jsonMenu.add(formatJsonMenuItem);

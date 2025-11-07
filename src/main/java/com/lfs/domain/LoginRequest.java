@@ -3,10 +3,9 @@ package com.lfs.domain;
 import lombok.Data;
 
 @Data
-public class User {
+public class LoginRequest {
     private String username;
     private String password;
-    private String nickname;
     private String captcha;
-    private String phoneNum;
+    private String captchaId;
 }
