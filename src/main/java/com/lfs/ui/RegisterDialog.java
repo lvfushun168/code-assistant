@@ -127,19 +127,36 @@ public class RegisterDialog extends JDialog {
             return;
         }
 
-        try {
-            BackendResponse<Object> response = accountService.register(username, password);
-            if (response.getCode() == 200) {
-                JOptionPane.showMessageDialog(this, "注册成功！", "成功", JOptionPane.INFORMATION_MESSAGE);
-                setVisible(false);
-            } else {
-                JOptionPane.showMessageDialog(this, "注册失败: " + response.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
-                refreshCaptcha();
+        LoadingDialog loadingDialog = new LoadingDialog(this);
+
+        SwingWorker<BackendResponse<Object>, Void> worker = new SwingWorker<BackendResponse<Object>, Void>() {
+            @Override
+            protected BackendResponse<Object> doInBackground() throws Exception {
+                return accountService.register(username, password);
             }
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, "注册过程中发生错误: " + ex.getMessage(), "严重错误", JOptionPane.ERROR_MESSAGE);
-            ex.printStackTrace();
-            refreshCaptcha();
-        }
+
+            @Override
+            protected void done() {
+                loadingDialog.setVisible(false);
+                loadingDialog.dispose();
+                try {
+                    BackendResponse<Object> response = get();
+                    if (response.getCode() == 200) {
+                        JOptionPane.showMessageDialog(RegisterDialog.this, "注册成功！", "成功", JOptionPane.INFORMATION_MESSAGE);
+                        setVisible(false);
+                    } else {
+                        JOptionPane.showMessageDialog(RegisterDialog.this, "注册失败: " + response.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+                        refreshCaptcha();
+                    }
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(RegisterDialog.this, "注册过程中发生错误: " + ex.getMessage(), "严重错误", JOptionPane.ERROR_MESSAGE);
+                    ex.printStackTrace();
+                    refreshCaptcha();
+                }
+            }
+        };
+
+        worker.execute();
+        loadingDialog.setVisible(true);
     }
 }
