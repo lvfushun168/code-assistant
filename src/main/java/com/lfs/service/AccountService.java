@@ -10,9 +10,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.mindrot.jbcrypt.BCrypt;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
+import cn.hutool.crypto.digest.DigestUtil;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * 账户服务类，处理注册、登录等业务逻辑
@@ -36,7 +38,7 @@ public class AccountService {
      */
     public BackendResponse<Object> register(String username, String password, String captcha, String captchaId) {
         try {
-            String hashedPassword = BCrypt.hashpw(password, BCrypt.gensalt());
+            String hashedPassword = DigestUtil.sha256Hex(password);
 
             User user = new User();
             user.setUsername(username);
@@ -65,12 +67,14 @@ public class AccountService {
 
     public BackendResponse<String> login(String username, String password, String captcha, String captchaId) {
         try {
-            String hashedPassword = BCrypt.hashpw(password, BCrypt.gensalt());
+            String hashedPassword = DigestUtil.sha256Hex(password);
 
             LoginRequest loginRequest = new LoginRequest();
             loginRequest.setUsername(username);
             loginRequest.setPassword(hashedPassword);
             loginRequest.setCaptcha(captcha);
+            loginRequest.setNonce(UUID.randomUUID().toString()); // 生成随机 nonce
+            loginRequest.setTimestamp(String.valueOf(System.currentTimeMillis())); // 获取当前时间戳
 
             HttpResponse response = HttpClientService.createPostRequest(LOGIN_URL)
                     .cookie("captchaCode=" + captchaId)

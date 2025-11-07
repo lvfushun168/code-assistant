@@ -7,5 +7,6 @@ public class LoginRequest {
     private String username;
     private String password;
     private String captcha;
-    private String captchaId;
+    private String nonce;
+    private String timestamp;
 }
