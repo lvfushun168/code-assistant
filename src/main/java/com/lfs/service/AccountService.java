@@ -46,7 +46,7 @@ public class AccountService {
             user.setNickname(username);
             user.setCaptcha(captcha);
 
-            HttpResponse response = HttpClientService.createPostRequest(REGISTER_URL)
+            HttpResponse response = HttpClientService.createPostRequest(REGISTER_URL, false)
                     .cookie("captchaCode=" + captchaId)
                     .body(JSON.toJSONString(user))
                     .contentType("application/json")
@@ -76,7 +76,7 @@ public class AccountService {
             loginRequest.setNonce(UUID.randomUUID().toString()); // 生成随机 nonce
             loginRequest.setTimestamp(String.valueOf(System.currentTimeMillis())); // 获取当前时间戳
 
-            HttpResponse response = HttpClientService.createPostRequest(LOGIN_URL)
+            HttpResponse response = HttpClientService.createPostRequest(LOGIN_URL, false)
                     .cookie("captchaCode=" + captchaId)
                     .body(JSON.toJSONString(loginRequest))
                     .contentType("application/json")
