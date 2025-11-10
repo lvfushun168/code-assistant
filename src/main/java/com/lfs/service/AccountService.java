@@ -22,12 +22,12 @@ import java.util.UUID;
 @Slf4j
 public class AccountService {
 
-//    private static final String REGISTER_URL = "http://8.148.146.195:8080/lfs-code-assistant/account/register";
-//    private static final String LOGIN_URL = "http://8.148.146.195:8080/lfs-code-assistant/account/login";
-//    private static final String CAPTCHA_URL = "http://8.148.146.195:8080/lfs-code-assistant/account/captcha";
-    private static final String REGISTER_URL = "http://localhost:6324/lfs-code-assistant/account/register";
-    private static final String LOGIN_URL = "http://localhost:6324/lfs-code-assistant/account/login";
-    private static final String CAPTCHA_URL = "http://localhost:6324/lfs-code-assistant/captcha/generate";
+    private static final String REGISTER_URL = "http://8.148.146.195:8080/lfs-code-assistant/account/register";
+    private static final String LOGIN_URL = "http://8.148.146.195:8080/lfs-code-assistant/account/login";
+    private static final String CAPTCHA_URL = "http://8.148.146.195:8080/lfs-code-assistant/captcha/generate";
+//    private static final String REGISTER_URL = "http://localhost:6324/lfs-code-assistant/account/register";
+//    private static final String LOGIN_URL = "http://localhost:6324/lfs-code-assistant/account/login";
+//    private static final String CAPTCHA_URL = "http://localhost:6324/lfs-code-assistant/captcha/generate";
 
     /**
      * 注册新用户
@@ -96,7 +96,7 @@ public class AccountService {
 
     public CaptchaResponse getCaptcha() {
         try {
-            HttpResponse response = HttpClientService.createGetRequest(CAPTCHA_URL).execute();
+            HttpResponse response = HttpClientService.createGetRequest(CAPTCHA_URL, false).execute();
             byte[] imageData = response.bodyBytes();
 
             // 从Cookie中获取captchaId

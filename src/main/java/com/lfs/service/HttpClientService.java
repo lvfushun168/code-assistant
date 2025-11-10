@@ -6,21 +6,24 @@ public class HttpClientService {
 
     private static final UserPreferencesService prefsService = new UserPreferencesService();
 
-    private static HttpRequest applyAuth(HttpRequest request) {
+    private static HttpRequest applyAuth(HttpRequest request, Boolean carryToken) {
         String token = prefsService.getToken();
-        if (token != null) {
+        if (carryToken && token != null) {
             return request.header("Authorization", "Bearer " + token);
         }
         return request;
     }
 
-    public static HttpRequest createGetRequest(String url) {
-        return applyAuth(HttpRequest.get(url));
+    public static HttpRequest createGetRequest(String url, Boolean carryToken) {
+        return applyAuth(HttpRequest.get(url), carryToken);
     }
 
     public static HttpRequest createPostRequest(String url) {
-        return applyAuth(HttpRequest.post(url));
+        return applyAuth(HttpRequest.post(url), true);
     }
 
-    // You can add other methods like put, delete etc. as needed
+    public static HttpRequest createPostRequest(String url, Boolean carryToken) {
+        return applyAuth(HttpRequest.post(url), carryToken);
+    }
+
 }
