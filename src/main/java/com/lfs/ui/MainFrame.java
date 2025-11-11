@@ -23,9 +23,21 @@ public class MainFrame extends JFrame {
     private JTabbedPane tabbedPane;
     private FileExplorerPanel fileExplorerPanel;
 
+    private JMenuItem loginMenuItem;
+    private JMenuItem logoutMenuItem;
+    private JMenuItem signupMenuItem;
+
     public MainFrame() {
         this.preferencesService = new UserPreferencesService();
         initUI();
+        updateAccountMenu();
+    }
+
+    public void updateAccountMenu() {
+        boolean isLoggedIn = preferencesService.getToken() != null;
+        loginMenuItem.setVisible(!isLoggedIn);
+        logoutMenuItem.setVisible(isLoggedIn);
+        signupMenuItem.setVisible(!isLoggedIn);
     }
 
     private void initUI() {
@@ -181,27 +193,25 @@ public class MainFrame extends JFrame {
         sqlMenu.add(sqlFormatMenuItem);
 
         // --- 创建“账户”菜单 ---
-        JMenu accountMenu = new JMenu("<html><u>云账户</u></html>");
-        JMenuItem signupMenuItem = new JMenuItem("注册...");
+        JMenu accountMenu = new JMenu("<html><u>账户</u></html>");
+        signupMenuItem = new JMenuItem("注册...");
         signupMenuItem.addActionListener(e -> {
             RegisterDialog registerDialog = new RegisterDialog(this);
             registerDialog.setVisible(true);
         });
         accountMenu.add(signupMenuItem);
-        JMenuItem loginMenuItem = new JMenuItem("登入...");
+        loginMenuItem = new JMenuItem("登入...");
         loginMenuItem.addActionListener(e -> {
             LoginDialog loginDialog = new LoginDialog(this);
             loginDialog.setVisible(true);
         });
         accountMenu.add(loginMenuItem);
-        JMenuItem logoutMenuItem = new JMenuItem("登出...");
+        logoutMenuItem = new JMenuItem("登出...");
         logoutMenuItem.addActionListener(e -> {
             int response = JOptionPane.showConfirmDialog(this, "您确定要登出吗？", "确认", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
             if (response == JOptionPane.YES_OPTION) {
                 preferencesService.clearToken();
-                // 重启应用
-                dispose();
-                com.lfs.CodeAssistant.main(new String[]{});
+                updateAccountMenu();
             }
         });
         accountMenu.add(logoutMenuItem);

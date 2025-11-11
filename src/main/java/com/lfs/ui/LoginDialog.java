@@ -138,6 +138,13 @@ public class LoginDialog extends JDialog {
                         String token = response.getData();
                         userPreferencesService.saveToken(token);
                         JOptionPane.showMessageDialog(LoginDialog.this, "登录成功！", "成功", JOptionPane.INFORMATION_MESSAGE);
+
+                        // 更新主窗口的菜单
+                        Window owner = getOwner();
+                        if (owner instanceof MainFrame) {
+                            ((MainFrame) owner).updateAccountMenu();
+                        }
+
                         setVisible(false);
                     } else {
                         JOptionPane.showMessageDialog(LoginDialog.this, "登录失败: " + response.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
