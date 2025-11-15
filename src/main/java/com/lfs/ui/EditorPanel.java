@@ -1,5 +1,6 @@
 package com.lfs.ui;
 
+import com.lfs.service.UserPreferencesService;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 import org.fife.ui.rtextarea.RTextScrollPane;
@@ -14,12 +15,14 @@ public class EditorPanel extends JPanel {
 
     private final RSyntaxTextArea rightTextArea;
     private final MainFrameController controller;
+    private final UserPreferencesService preferencesService;
     private File currentFile;
     // RSyntaxTextArea 有自己的撤销管理器，所以我们不需要一个单独的。
 
-    public EditorPanel(MainFrameController controller) {
+    public EditorPanel(MainFrameController controller, UserPreferencesService preferencesService) {
         super(new BorderLayout());
         this.controller = controller;
+        this.preferencesService = preferencesService;
         this.rightTextArea = new RSyntaxTextArea();
         initUI();
         setupSaveShortcut();
@@ -65,6 +68,11 @@ public class EditorPanel extends JPanel {
             // 如果出现错误，我们可以记录它，但编辑器仍将使用默认颜色正常工作。
             e.printStackTrace();
         }
+
+        // 在应用主题后加载并应用用户偏好，以避免被主题覆盖
+        float fontSize = preferencesService.loadFontSize();
+        rightTextArea.setFont(rightTextArea.getFont().deriveFont(fontSize));
+        rightTextArea.setLineWrap(preferencesService.loadLineWrap());
 
         RTextScrollPane rightScrollPane = new RTextScrollPane(rightTextArea);
         rightScrollPane.setLineNumbersEnabled(true);
@@ -170,6 +178,7 @@ public class EditorPanel extends JPanel {
         Font font = rightTextArea.getFont();
         float size = font.getSize() + 1.0f;
         rightTextArea.setFont(font.deriveFont(size));
+        preferencesService.saveFontSize(size);
     }
 
     public void zoomOut() {
@@ -177,11 +186,13 @@ public class EditorPanel extends JPanel {
         float size = font.getSize() - 1.0f;
         if (size >= 8.0f) {
             rightTextArea.setFont(font.deriveFont(size));
+            preferencesService.saveFontSize(size);
         }
     }
 
     public void setLineWrap(boolean wrap) {
         rightTextArea.setLineWrap(wrap);
+        preferencesService.saveLineWrap(wrap);
     }
 
     public boolean getLineWrap() {

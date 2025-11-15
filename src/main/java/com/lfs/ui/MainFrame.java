@@ -311,7 +311,7 @@ public class MainFrame extends JFrame {
         }
 
         // 创建新的 EditorPanel
-        EditorPanel newEditorPanel = new EditorPanel(controller);
+        EditorPanel newEditorPanel = new EditorPanel(controller, preferencesService);
         newEditorPanel.setCurrentFile(file);
         newEditorPanel.setTextAreaContent(content);
         newEditorPanel.getTextArea().setCaretPosition(0);

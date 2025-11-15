@@ -19,11 +19,31 @@ public class UserPreferencesService {
     private static final String WINDOW_HEIGHT_KEY = "windowHeight";
     private static final String FILE_EXPLORER_LAST_DIRECTORY_KEY = "fileExplorerLastDirectory";
     private static final String AUTH_TOKEN_KEY = "authToken";
+    private static final String FONT_SIZE_KEY = "fontSize";
+    private static final String LINE_WRAP_KEY = "lineWrap";
 
     public UserPreferencesService() {
         // 使用 userNodeForPackage 确保偏好设置按用户存储
         this.prefs = Preferences.userNodeForPackage(UserPreferencesService.class);
     }
+
+    public void saveFontSize(float fontSize) {
+        prefs.putFloat(FONT_SIZE_KEY, fontSize);
+    }
+
+    public float loadFontSize() {
+        // RSyntaxTextArea 默认字体大小通常在 12-13 之间，我们选择 13f 作为默认值
+        return prefs.getFloat(FONT_SIZE_KEY, 13f);
+    }
+
+    public void saveLineWrap(boolean enabled) {
+        prefs.putBoolean(LINE_WRAP_KEY, enabled);
+    }
+
+    public boolean loadLineWrap() {
+        return prefs.getBoolean(LINE_WRAP_KEY, false);
+    }
+
 
     public void saveToken(String token) {
         if (token != null && !token.isEmpty()) {
