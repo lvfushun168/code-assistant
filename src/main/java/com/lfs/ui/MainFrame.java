@@ -9,6 +9,7 @@ import com.lfs.util.NotificationUtil;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
@@ -102,6 +103,28 @@ public class MainFrame extends JFrame {
         JMenuItem saveMenuItem = new JMenuItem("保存");
         saveMenuItem.addActionListener(e -> controller.saveCurrentFile());
         editMenu.add(saveMenuItem);
+
+        editMenu.addSeparator();
+
+        JMenuItem zoomInMenuItem = new JMenuItem("放大");
+        zoomInMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_EQUALS, Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx()));
+        zoomInMenuItem.addActionListener(e -> {
+            Component activePanel = getActiveEditorPanel();
+            if (activePanel instanceof EditorPanel) {
+                ((EditorPanel) activePanel).zoomIn();
+            }
+        });
+        editMenu.add(zoomInMenuItem);
+
+        JMenuItem zoomOutMenuItem = new JMenuItem("缩小");
+        zoomOutMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_MINUS, Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx()));
+        zoomOutMenuItem.addActionListener(e -> {
+            Component activePanel = getActiveEditorPanel();
+            if (activePanel instanceof EditorPanel) {
+                ((EditorPanel) activePanel).zoomOut();
+            }
+        });
+        editMenu.add(zoomOutMenuItem);
 
         // --- 创建“JSON”菜单 ---
         JMenu jsonMenu = new JMenu("<html><u>JSON</u></html>");

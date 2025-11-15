@@ -117,7 +117,7 @@ public class EditorPanel extends JPanel {
         }
     }
 
-    private void setSyntaxStyle(String extension) {
+    public void setSyntaxStyle(String extension) {
         switch (extension.toLowerCase()) {
             case "java":
                 rightTextArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JAVA);
@@ -163,6 +163,20 @@ public class EditorPanel extends JPanel {
             default:
                 rightTextArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_NONE);
                 break;
+        }
+    }
+
+    public void zoomIn() {
+        Font font = rightTextArea.getFont();
+        float size = font.getSize() + 1.0f;
+        rightTextArea.setFont(font.deriveFont(size));
+    }
+
+    public void zoomOut() {
+        Font font = rightTextArea.getFont();
+        float size = font.getSize() - 1.0f;
+        if (size >= 8.0f) {
+            rightTextArea.setFont(font.deriveFont(size));
         }
     }
 }
