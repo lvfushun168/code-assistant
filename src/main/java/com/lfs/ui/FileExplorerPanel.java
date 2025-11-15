@@ -358,10 +358,54 @@ public class FileExplorerPanel extends JPanel {
         navigateTo(currentDir, true); // 强制刷新
     }
 
-    public void lazyLoadInitialDirectory() {
+    public void lazyLoadInitialDirectory(Runnable onFinished) {
         File lastDir = prefsService.getFileExplorerLastDirectory();
         File initialDir = (lastDir != null && lastDir.exists()) ? lastDir : new File(System.getProperty("user.home"));
-        navigateTo(initialDir, true);
+
+        setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+        new SwingWorker<File[], Void>() {
+            @Override
+            protected File[] doInBackground() {
+                return initialDir.listFiles();
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    File[] files = get();
+                    if (files == null) return;
+
+                    Arrays.sort(files, (f1, f2) -> {
+                        if (f1.isDirectory() && !f2.isDirectory()) return -1;
+                        if (!f1.isDirectory() && f2.isDirectory()) return 1;
+                        return f1.getName().compareToIgnoreCase(f2.getName());
+                    });
+
+                    rootNode.removeAllChildren();
+                    for (File file : files) {
+                        rootNode.add(new DefaultMutableTreeNode(file));
+                    }
+                    treeModel.reload(rootNode);
+
+                    currentPathLabel.setText(" " + initialDir.getAbsolutePath());
+                    prefsService.saveFileExplorerLastDirectory(initialDir);
+
+                    // Update history for the initial load
+                    history.clear();
+                    history.add(initialDir);
+                    historyIndex = 0;
+                    updateNavigationButtons();
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                } finally {
+                    setCursor(Cursor.getDefaultCursor());
+                    if (onFinished != null) {
+                        onFinished.run();
+                    }
+                }
+            }
+        }.execute();
     }
 
     private void navigateTo(File directory) {
