@@ -249,6 +249,10 @@ public class MainFrame extends JFrame {
         });
     }
 
+    public FileExplorerPanel getFileExplorerPanel() {
+        return fileExplorerPanel;
+    }
+
     public void openFileInTab(File file, String content) {
         // 检查是否已经打开
         for (int i = 0; i < tabbedPane.getTabCount(); i++) {

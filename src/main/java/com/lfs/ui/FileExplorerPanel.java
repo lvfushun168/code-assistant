@@ -52,7 +52,6 @@ public class FileExplorerPanel extends JPanel {
         fileTree = new JTree(treeModel);
 
         initUI();
-        loadInitialDirectory();
     }
 
     private void initUI() {
@@ -359,7 +358,7 @@ public class FileExplorerPanel extends JPanel {
         navigateTo(currentDir, true); // 强制刷新
     }
 
-    private void loadInitialDirectory() {
+    public void lazyLoadInitialDirectory() {
         File lastDir = prefsService.getFileExplorerLastDirectory();
         File initialDir = (lastDir != null && lastDir.exists()) ? lastDir : new File(System.getProperty("user.home"));
         navigateTo(initialDir, true);

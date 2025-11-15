@@ -36,6 +36,10 @@ public class CodeAssistant {
             if (args.length > 0) {
                 mainFrame.openFile(new java.io.File(args[0]));
             }
+            // 懒加载文件浏览器
+            SwingUtilities.invokeLater(() -> {
+                mainFrame.getFileExplorerPanel().lazyLoadInitialDirectory();
+            });
         });
     }
 }
