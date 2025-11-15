@@ -27,6 +27,7 @@ public class MainFrame extends JFrame {
     private JMenuItem loginMenuItem;
     private JMenuItem logoutMenuItem;
     private JMenuItem signupMenuItem;
+    private JCheckBoxMenuItem lineWrapMenuItem;
 
     public MainFrame() {
         this.preferencesService = new UserPreferencesService();
@@ -79,6 +80,19 @@ public class MainFrame extends JFrame {
         this.fileExplorerPanel = new FileExplorerPanel(this.controller);
         this.tabbedPane = new JTabbedPane();
 
+        // 添加选项卡切换监听器
+        this.tabbedPane.addChangeListener(e -> {
+            Component selectedComponent = tabbedPane.getSelectedComponent();
+            if (selectedComponent instanceof EditorPanel) {
+                EditorPanel editorPanel = (EditorPanel) selectedComponent;
+                lineWrapMenuItem.setSelected(editorPanel.getLineWrap());
+                lineWrapMenuItem.setEnabled(true);
+            } else {
+                // 如果不是 EditorPanel，则禁用菜单项
+                lineWrapMenuItem.setEnabled(false);
+            }
+        });
+
         // --- 创建右侧面板，包含菜单栏和选项卡面板 ---
         JPanel rightPanel = new JPanel(new BorderLayout());
 
@@ -125,6 +139,17 @@ public class MainFrame extends JFrame {
             }
         });
         editMenu.add(zoomOutMenuItem);
+
+        editMenu.addSeparator();
+
+        lineWrapMenuItem = new JCheckBoxMenuItem("自动换行");
+        lineWrapMenuItem.addActionListener(e -> {
+            Component activePanel = getActiveEditorPanel();
+            if (activePanel instanceof EditorPanel) {
+                ((EditorPanel) activePanel).setLineWrap(lineWrapMenuItem.isSelected());
+            }
+        });
+        editMenu.add(lineWrapMenuItem);
 
         // --- 创建“JSON”菜单 ---
         JMenu jsonMenu = new JMenu("<html><u>JSON</u></html>");

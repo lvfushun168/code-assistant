@@ -179,4 +179,12 @@ public class EditorPanel extends JPanel {
             rightTextArea.setFont(font.deriveFont(size));
         }
     }
+
+    public void setLineWrap(boolean wrap) {
+        rightTextArea.setLineWrap(wrap);
+    }
+
+    public boolean getLineWrap() {
+        return rightTextArea.getLineWrap();
+    }
 }
