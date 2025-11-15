@@ -8,6 +8,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
@@ -63,7 +64,7 @@ public class FileProcessorService {
                 if (lastDotIndex > 0) {
                     String extension = fileName.substring(lastDotIndex + 1).toLowerCase();
                     if (AppConfig.ALLOWED_EXTENSIONS.contains(extension)) {
-                        String content = Files.readString(file.toPath());
+                        String content = Files.readString(file.toPath(), StandardCharsets.UTF_8);
 //                        builder.append("--- 文件路径: ").append(file.getAbsolutePath()).append(" ---\n\n");
                         builder.append(content).append("\n\n");
                     }
@@ -113,7 +114,7 @@ public class FileProcessorService {
      * @throws IOException 读取异常
      */
     public String readFileContent(File file) throws IOException {
-        return Files.readString(file.toPath());
+        return Files.readString(file.toPath(), StandardCharsets.UTF_8);
     }
 
     /**
@@ -123,9 +124,7 @@ public class FileProcessorService {
      * @throws IOException 写入异常
      */
     public void saveFile(File file, String content) throws IOException {
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
-            writer.write(content);
-        }
+        Files.writeString(file.toPath(), content, StandardCharsets.UTF_8);
     }
 
     /**

@@ -9,6 +9,7 @@ import java.util.List;
 public class CodeAssistant {
 
     public static void main(String[] args) {
+        System.setProperty("sun.jnu.encoding", "UTF-8");
         // 设置 FlatLaf 深色主题
         FlatDarculaLaf.setup();
 
