@@ -94,17 +94,14 @@ public class MainFrame extends JFrame {
         getStructureMenuItem.addActionListener(e -> controller.onProcessDirectory(false));
         project.add(getStructureMenuItem);
 
-        // --- 创建“保存”菜单 ---
-        JMenu saveMenu = new JMenu("<html><u>保存</u></html>");
+        // --- 创建“编辑”菜单 ---
+        JMenu editMenu = new JMenu("<html><u>编辑</u></html>");
         JMenuItem saveAsMenuItem = new JMenuItem("另存为...");
         saveAsMenuItem.addActionListener(e -> controller.onSaveAs());
-        saveMenu.add(saveAsMenuItem);
+        editMenu.add(saveAsMenuItem);
         JMenuItem saveMenuItem = new JMenuItem("保存");
         saveMenuItem.addActionListener(e -> controller.saveCurrentFile());
-        saveMenu.add(saveMenuItem);
-
-        // --- 创建“导入”菜单 ---
-        JMenu importMenu = new JMenu("<html><u>导入</u></html>");
+        editMenu.add(saveMenuItem);
 
         // --- 创建“JSON”菜单 ---
         JMenu jsonMenu = new JMenu("<html><u>JSON</u></html>");
@@ -222,8 +219,7 @@ public class MainFrame extends JFrame {
 
         // --- 将菜单添加到菜单栏 ---
         menuBar.add(project);
-        menuBar.add(saveMenu);
-        menuBar.add(importMenu);
+        menuBar.add(editMenu);
         menuBar.add(jsonMenu);
         menuBar.add(sqlMenu);
         menuBar.add(accountMenu);
