@@ -40,6 +40,10 @@ public class MainFrame extends JFrame {
         loginMenuItem.setVisible(!isLoggedIn);
         logoutMenuItem.setVisible(isLoggedIn);
         signupMenuItem.setVisible(!isLoggedIn);
+        // 根据登录状态更新文件浏览器的云标签
+        if (fileExplorerPanel != null) {
+            fileExplorerPanel.setCloudTabEnabled(isLoggedIn);
+        }
     }
 
     private void initUI() {
@@ -257,6 +261,10 @@ public class MainFrame extends JFrame {
             if (response == JOptionPane.YES_OPTION) {
                 preferencesService.clearToken();
                 updateAccountMenu();
+                // 登出后切换回本地选项卡
+                if (fileExplorerPanel != null) {
+                    fileExplorerPanel.switchToLocalTab();
+                }
             }
         });
         accountMenu.add(logoutMenuItem);

@@ -40,6 +40,8 @@ public class FileExplorerPanel extends JPanel {
     private JButton backButton;
     private JButton forwardButton;
     private JButton upButton;
+    private JTabbedPane tabbedPane;
+    private JPanel cloudPanel;
 
     public FileExplorerPanel(MainFrameController controller) {
         super(new BorderLayout());
@@ -78,13 +80,30 @@ public class FileExplorerPanel extends JPanel {
 
         add(toolBar, BorderLayout.NORTH);
 
-        // 文件树
+        // --- Create Tabbed Pane ---
+        tabbedPane = new JTabbedPane();
+
+        // --- Local Panel ---
+        JPanel localPanel = new JPanel(new BorderLayout());
         fileTree.setRootVisible(false);
         fileTree.setShowsRootHandles(true);
         fileTree.setCellRenderer(new FileTreeCellRenderer());
         fileTree.setFont(new Font("SansSerif", Font.PLAIN, 14));
         JScrollPane scrollPane = new JScrollPane(fileTree);
-        add(scrollPane, BorderLayout.CENTER);
+        localPanel.add(scrollPane, BorderLayout.CENTER);
+
+        // --- Cloud Panel ---
+        cloudPanel = new JPanel(new BorderLayout());
+        cloudPanel.add(new JLabel("请先登录", SwingConstants.CENTER), BorderLayout.CENTER);
+
+        tabbedPane.addTab("本地", localPanel);
+        tabbedPane.addTab("云端", cloudPanel);
+
+        // Disable cloud tab initially
+        tabbedPane.setEnabledAt(1, false);
+
+        add(tabbedPane, BorderLayout.CENTER);
+
 
         addListeners();
     }
@@ -500,6 +519,26 @@ public class FileExplorerPanel extends JPanel {
         }
     }
 
+    public void setCloudTabEnabled(boolean enabled) {
+        tabbedPane.setEnabledAt(1, enabled);
+        if (enabled) {
+            // Potentially load cloud content here
+            cloudPanel.removeAll();
+            cloudPanel.add(new JLabel("云端文件（待实现）", SwingConstants.CENTER)); // Placeholder
+            cloudPanel.revalidate();
+            cloudPanel.repaint();
+        } else {
+            cloudPanel.removeAll();
+            cloudPanel.add(new JLabel("请先登录", SwingConstants.CENTER), BorderLayout.CENTER);
+            cloudPanel.revalidate();
+            cloudPanel.repaint();
+        }
+    }
+
+    public void switchToLocalTab() {
+        tabbedPane.setSelectedIndex(0);
+    }
+
     private static class FileTreeCellRenderer extends DefaultTreeCellRenderer {
         private final FileSystemView fileSystemView = FileSystemView.getFileSystemView();
 
@@ -511,7 +550,7 @@ public class FileExplorerPanel extends JPanel {
                 if (node.getUserObject() instanceof File) {
                     File file = (File) node.getUserObject();
                     setText(fileSystemView.getSystemDisplayName(file));
-                    setIcon(fileSystemView.getSystemIcon(file));
+setIcon(fileSystemView.getSystemIcon(file));
                 }
             }
             return this;
