@@ -1,9 +1,8 @@
 package com.lfs.ui;
 
 import com.lfs.config.AppConfig;
-import com.lfs.service.ClipboardService;
-import com.lfs.service.FileProcessorService;
-import com.lfs.service.UserPreferencesService;
+import com.lfs.domain.DirNode;
+import com.lfs.service.*;
 import com.lfs.util.NotificationUtil;
 
 import javax.swing.*;
@@ -43,11 +42,19 @@ public class FileExplorerPanel extends JPanel {
     private JTabbedPane tabbedPane;
     private JPanel cloudPanel;
 
+    // Cloud components
+    private JTree cloudFileTree;
+    private DefaultTreeModel cloudTreeModel;
+    private DefaultMutableTreeNode cloudRootNode;
+    private DirService dirService;
+
+
     public FileExplorerPanel(MainFrameController controller) {
         super(new BorderLayout());
         this.controller = controller;
         this.prefsService = new UserPreferencesService();
         this.fileProcessorService = new FileProcessorService();
+        this.dirService = new DirService();
 
         rootNode = new DefaultMutableTreeNode();
         treeModel = new DefaultTreeModel(rootNode);
@@ -94,13 +101,24 @@ public class FileExplorerPanel extends JPanel {
 
         // --- Cloud Panel ---
         cloudPanel = new JPanel(new BorderLayout());
-        cloudPanel.add(new JLabel("请先登录", SwingConstants.CENTER), BorderLayout.CENTER);
+        cloudRootNode = new DefaultMutableTreeNode("云端文件");
+        cloudTreeModel = new DefaultTreeModel(cloudRootNode);
+        cloudFileTree = new JTree(cloudTreeModel);
+        cloudFileTree.setCellRenderer(new CloudFileTreeCellRenderer());
+        cloudFileTree.setRootVisible(false);
+        cloudFileTree.setShowsRootHandles(true);
+        JScrollPane cloudScrollPane = new JScrollPane(cloudFileTree);
+        cloudPanel.add(cloudScrollPane, BorderLayout.CENTER);
+
 
         tabbedPane.addTab("本地", localPanel);
         tabbedPane.addTab("云端", cloudPanel);
 
         // Disable cloud tab initially
         tabbedPane.setEnabledAt(1, false);
+        cloudPanel.removeAll();
+        cloudPanel.add(new JLabel("请先登录", SwingConstants.CENTER), BorderLayout.CENTER);
+
 
         add(tabbedPane, BorderLayout.CENTER);
 
@@ -139,6 +157,26 @@ public class FileExplorerPanel extends JPanel {
                             navigateTo(file);
                         } else {
                             openFile(file);
+                        }
+                    }
+                }
+            }
+        });
+
+        cloudFileTree.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (e.getClickCount() == 2) {
+                    TreePath path = cloudFileTree.getPathForLocation(e.getX(), e.getY());
+                    if (path != null) {
+                        DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
+                        if (node.getUserObject() instanceof DirNode) {
+                            DirNode dirNode = (DirNode) node.getUserObject();
+                            // 如果是文件 (没有子节点)
+                            if (dirNode.getChildren() == null || dirNode.getChildren().isEmpty()) {
+                                // TODO: 实现打开云端文件的逻辑
+                                NotificationUtil.showToast(FileExplorerPanel.this, "打开云端文件功能待实现");
+                            }
                         }
                     }
                 }
@@ -522,11 +560,12 @@ public class FileExplorerPanel extends JPanel {
     public void setCloudTabEnabled(boolean enabled) {
         tabbedPane.setEnabledAt(1, enabled);
         if (enabled) {
-            // Potentially load cloud content here
             cloudPanel.removeAll();
-            cloudPanel.add(new JLabel("云端文件（待实现）", SwingConstants.CENTER)); // Placeholder
+            JScrollPane cloudScrollPane = new JScrollPane(cloudFileTree);
+            cloudPanel.add(cloudScrollPane, BorderLayout.CENTER);
             cloudPanel.revalidate();
             cloudPanel.repaint();
+            loadCloudDirectory();
         } else {
             cloudPanel.removeAll();
             cloudPanel.add(new JLabel("请先登录", SwingConstants.CENTER), BorderLayout.CENTER);
@@ -534,6 +573,44 @@ public class FileExplorerPanel extends JPanel {
             cloudPanel.repaint();
         }
     }
+
+    public void loadCloudDirectory() {
+        setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+        new SwingWorker<DirNode, Void>() {
+            @Override
+            protected DirNode doInBackground() throws Exception {
+                return dirService.getDirTree();
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    DirNode root = get();
+                    cloudRootNode.removeAllChildren();
+                    if (root != null) {
+                        addCloudNodes(cloudRootNode, root);
+                    }
+                    cloudTreeModel.reload(cloudRootNode);
+                } catch (Exception e) {
+                    NotificationUtil.showErrorDialog(FileExplorerPanel.this, "加载云端目录失败: " + e.getMessage());
+                    e.printStackTrace();
+                } finally {
+                    setCursor(Cursor.getDefaultCursor());
+                }
+            }
+        }.execute();
+    }
+
+    private void addCloudNodes(DefaultMutableTreeNode parent, DirNode dirNode) {
+        DefaultMutableTreeNode newNode = new DefaultMutableTreeNode(dirNode);
+        parent.add(newNode);
+        if (dirNode.getChildren() != null && !dirNode.getChildren().isEmpty()) {
+            for (DirNode child : dirNode.getChildren()) {
+                addCloudNodes(newNode, child);
+            }
+        }
+    }
+
 
     public void switchToLocalTab() {
         tabbedPane.setSelectedIndex(0);
@@ -550,7 +627,28 @@ public class FileExplorerPanel extends JPanel {
                 if (node.getUserObject() instanceof File) {
                     File file = (File) node.getUserObject();
                     setText(fileSystemView.getSystemDisplayName(file));
-setIcon(fileSystemView.getSystemIcon(file));
+                    setIcon(fileSystemView.getSystemIcon(file));
+                }
+            }
+            return this;
+        }
+    }
+
+    private static class CloudFileTreeCellRenderer extends DefaultTreeCellRenderer {
+        @Override
+        public Component getTreeCellRendererComponent(JTree tree, Object value, boolean sel, boolean expanded, boolean leaf, int row, boolean hasFocus) {
+            super.getTreeCellRendererComponent(tree, value, sel, expanded, leaf, row, hasFocus);
+            if (value instanceof DefaultMutableTreeNode) {
+                DefaultMutableTreeNode node = (DefaultMutableTreeNode) value;
+                if (node.getUserObject() instanceof DirNode) {
+                    DirNode dirNode = (DirNode) node.getUserObject();
+                    setText(dirNode.getName());
+                    // Simple icons: leaf for files, folder for directories
+                    if (leaf) {
+                        setIcon(UIManager.getIcon("FileView.fileIcon"));
+                    } else {
+                        setIcon(UIManager.getIcon("FileView.directoryIcon"));
+                    }
                 }
             }
             return this;
