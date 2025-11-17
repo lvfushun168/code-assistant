@@ -1,7 +1,8 @@
 package com.lfs.ui;
 
 import com.lfs.config.AppConfig;
-import com.lfs.domain.DirNode;
+import com.lfs.domain.ContentResponse;
+import com.lfs.domain.DirTreeResponse;
 import com.lfs.service.*;
 import com.lfs.util.NotificationUtil;
 
@@ -12,10 +13,10 @@ import javax.swing.tree.DefaultTreeCellRenderer;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
 import java.awt.*;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -170,13 +171,10 @@ public class FileExplorerPanel extends JPanel {
                     TreePath path = cloudFileTree.getPathForLocation(e.getX(), e.getY());
                     if (path != null) {
                         DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
-                        if (node.getUserObject() instanceof DirNode) {
-                            DirNode dirNode = (DirNode) node.getUserObject();
-                            // 如果是文件 (没有子节点)
-                            if (dirNode.getChildren() == null || dirNode.getChildren().isEmpty()) {
-                                // TODO: 实现打开云端文件的逻辑
-                                NotificationUtil.showToast(FileExplorerPanel.this, "打开云端文件功能待实现");
-                            }
+                        Object userObject = node.getUserObject();
+                        if (userObject instanceof ContentResponse) {
+                            ContentResponse fileContent = (ContentResponse) userObject;
+                            controller.onCloudFileSelected(fileContent.getTitle(), fileContent.getContent());
                         }
                     }
                 }
@@ -576,19 +574,19 @@ public class FileExplorerPanel extends JPanel {
 
     public void loadCloudDirectory() {
         setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
-        new SwingWorker<DirNode, Void>() {
+        new SwingWorker<DirTreeResponse, Void>() {
             @Override
-            protected DirNode doInBackground() throws Exception {
+            protected DirTreeResponse doInBackground() throws Exception {
                 return dirService.getDirTree();
             }
 
             @Override
             protected void done() {
                 try {
-                    DirNode root = get();
+                    DirTreeResponse root = get();
                     cloudRootNode.removeAllChildren();
                     if (root != null) {
-                        addCloudNodes(cloudRootNode, root);
+                        buildCloudTree(cloudRootNode, root);
                     }
                     cloudTreeModel.reload(cloudRootNode);
                 } catch (Exception e) {
@@ -601,12 +599,21 @@ public class FileExplorerPanel extends JPanel {
         }.execute();
     }
 
-    private void addCloudNodes(DefaultMutableTreeNode parent, DirNode dirNode) {
-        DefaultMutableTreeNode newNode = new DefaultMutableTreeNode(dirNode);
-        parent.add(newNode);
-        if (dirNode.getChildren() != null && !dirNode.getChildren().isEmpty()) {
-            for (DirNode child : dirNode.getChildren()) {
-                addCloudNodes(newNode, child);
+    private void buildCloudTree(DefaultMutableTreeNode parent, DirTreeResponse dir) {
+        DefaultMutableTreeNode dirNode = new DefaultMutableTreeNode(dir);
+        parent.add(dirNode);
+
+        // Add files first
+        if (dir.getContents() != null && !dir.getContents().isEmpty()) {
+            for (ContentResponse content : dir.getContents()) {
+                dirNode.add(new DefaultMutableTreeNode(content));
+            }
+        }
+
+        // Then add subdirectories
+        if (dir.getChildren() != null && !dir.getChildren().isEmpty()) {
+            for (DirTreeResponse child : dir.getChildren()) {
+                buildCloudTree(dirNode, child);
             }
         }
     }
@@ -640,15 +647,16 @@ public class FileExplorerPanel extends JPanel {
             super.getTreeCellRendererComponent(tree, value, sel, expanded, leaf, row, hasFocus);
             if (value instanceof DefaultMutableTreeNode) {
                 DefaultMutableTreeNode node = (DefaultMutableTreeNode) value;
-                if (node.getUserObject() instanceof DirNode) {
-                    DirNode dirNode = (DirNode) node.getUserObject();
-                    setText(dirNode.getName());
-                    // Simple icons: leaf for files, folder for directories
-                    if (leaf) {
-                        setIcon(UIManager.getIcon("FileView.fileIcon"));
-                    } else {
-                        setIcon(UIManager.getIcon("FileView.directoryIcon"));
-                    }
+                Object userObject = node.getUserObject();
+
+                if (userObject instanceof DirTreeResponse) {
+                    DirTreeResponse dir = (DirTreeResponse) userObject;
+                    setText(dir.getName());
+                    setIcon(UIManager.getIcon("FileView.directoryIcon"));
+                } else if (userObject instanceof ContentResponse) {
+                    ContentResponse content = (ContentResponse) userObject;
+                    setText(content.getTitle());
+                    setIcon(UIManager.getIcon("FileView.fileIcon"));
                 }
             }
             return this;

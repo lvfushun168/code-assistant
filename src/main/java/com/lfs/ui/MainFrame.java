@@ -371,6 +371,27 @@ public class MainFrame extends JFrame {
         addTab(file.getName(), newViewerPanel);
     }
 
+    public void openCloudFileInTab(String title, String content) {
+        // 检查是否已经打开
+        for (int i = 0; i < tabbedPane.getTabCount(); i++) {
+            // 这里我们只通过标题来判断，因为没有File对象
+            if (title.equals(tabbedPane.getTitleAt(i))) {
+                tabbedPane.setSelectedIndex(i); // 切换到已存在的选项卡
+                return;
+            }
+        }
+
+        // 创建新的 EditorPanel
+        EditorPanel newEditorPanel = new EditorPanel(controller, preferencesService);
+        // 对于云文件，我们没有File对象，所以不设置
+        // newEditorPanel.setCurrentFile(file);
+        newEditorPanel.setTextAreaContent(content);
+        newEditorPanel.getTextArea().setCaretPosition(0);
+
+        // 添加到 tabbedPane
+        addTab(title, newEditorPanel);
+    }
+
     public void openFile(File file) {
         if (file != null && file.exists() && file.isFile()) {
             controller.onFileSelected(file);

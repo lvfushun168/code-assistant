@@ -4,7 +4,7 @@ import cn.hutool.core.lang.TypeReference;
 import cn.hutool.json.JSONUtil;
 import com.lfs.config.AppConfig;
 import com.lfs.domain.ApiResponse;
-import com.lfs.domain.DirNode;
+import com.lfs.domain.DirTreeResponse;
 import com.lfs.util.NotificationUtil;
 
 public class DirService {
@@ -15,7 +15,7 @@ public class DirService {
      * 获取云端目录树
      * @return 目录树根节点
      */
-    public DirNode getDirTree() {
+    public DirTreeResponse getDirTree() {
         String url = AppConfig.BASE_URL + AppConfig.DIR_TREE_URL;
         try {
             String responseBody = httpClientService.createGetRequest(url, true).execute().body();
@@ -25,8 +25,8 @@ public class DirService {
             }
 
             // 使用Hutool的TypeReference来处理泛型
-            TypeReference<ApiResponse<DirNode>> typeRef = new TypeReference<ApiResponse<DirNode>>() {};
-            ApiResponse<DirNode> apiResponse = JSONUtil.toBean(responseBody, typeRef, false);
+            TypeReference<ApiResponse<DirTreeResponse>> typeRef = new TypeReference<ApiResponse<DirTreeResponse>>() {};
+            ApiResponse<DirTreeResponse> apiResponse = JSONUtil.toBean(responseBody, typeRef, false);
 
 
             if (apiResponse != null && apiResponse.getCode() == 200) {

@@ -211,6 +211,10 @@ public class MainFrameController {
         mainFrame.openFileInTabReadOnly(file);
     }
 
+    public void onCloudFileSelected(String title, String content) {
+        mainFrame.openCloudFileInTab(title, content);
+    }
+
     public void saveCurrentFile() {
         Component activeComponent = mainFrame.getActiveEditorPanel();
         if (activeComponent == null) {
