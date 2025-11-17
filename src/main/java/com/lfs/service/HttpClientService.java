@@ -26,4 +26,12 @@ public class HttpClientService {
         return applyAuth(HttpRequest.post(url), carryToken);
     }
 
+    public static HttpRequest createPutRequest(String url, Boolean carryToken) {
+        return applyAuth(HttpRequest.put(url), carryToken);
+    }
+
+    public static HttpRequest createDeleteRequest(String url, Boolean carryToken) {
+        return applyAuth(HttpRequest.delete(url), carryToken);
+    }
+
 }

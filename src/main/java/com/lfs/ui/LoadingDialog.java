@@ -5,6 +5,11 @@ import java.awt.*;
 
 public class LoadingDialog extends JDialog {
 
+    public LoadingDialog(Frame owner) {
+        super(owner, "加载中...", true);
+        initUI();
+    }
+
     public LoadingDialog(JDialog owner) {
         super(owner, "加载中...", true);
         initUI();

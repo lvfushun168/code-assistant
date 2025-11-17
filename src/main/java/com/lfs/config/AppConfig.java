@@ -25,6 +25,11 @@ public class AppConfig {
     public static final String DIR_TREE_URL = API_PREFIX + "/dir/tree";
 
     /**
+     * 目录
+     */
+    public static final String DIR_URL = API_PREFIX + "/dir";
+
+    /**
      * 允许应用程序读取的文件扩展名
      */
     public static final Set<String> ALLOWED_EXTENSIONS = new HashSet<>(Arrays.asList(

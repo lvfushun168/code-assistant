@@ -1,10 +1,14 @@
 package com.lfs.service;
 
 import cn.hutool.core.lang.TypeReference;
+import cn.hutool.http.HttpResponse;
 import cn.hutool.json.JSONUtil;
 import com.lfs.config.AppConfig;
 import com.lfs.domain.ApiResponse;
+import com.lfs.domain.BackendResponse;
 import com.lfs.domain.DirTreeResponse;
+import com.lfs.domain.dto.CreateDirRequest;
+import com.lfs.domain.dto.UpdateDirRequest;
 import com.lfs.util.NotificationUtil;
 
 public class DirService {
@@ -18,7 +22,7 @@ public class DirService {
     public DirTreeResponse getDirTree() {
         String url = AppConfig.BASE_URL + AppConfig.DIR_TREE_URL;
         try {
-            String responseBody = httpClientService.createGetRequest(url, true).execute().body();
+            String responseBody = HttpClientService.createGetRequest(url, true).execute().body();
             if (responseBody == null) {
                 NotificationUtil.showErrorDialog(null, "获取云端目录失败，响应为空");
                 return null;
@@ -40,6 +44,67 @@ public class DirService {
             NotificationUtil.showErrorDialog(null, "请求云端目录时发生异常: " + e.getMessage());
             e.printStackTrace();
             return null;
+        }
+    }
+
+    public boolean createDir(Long parentId, String name) {
+        String url = AppConfig.BASE_URL + AppConfig.DIR_URL;
+        try {
+            CreateDirRequest request = new CreateDirRequest(parentId, name);
+            HttpResponse response = HttpClientService.createPostRequest(url, true)
+                    .body(JSONUtil.toJsonStr(request))
+                    .contentType("application/json")
+                    .execute();
+
+            BackendResponse<?> apiResponse = JSONUtil.toBean(response.body(), BackendResponse.class);
+            if (apiResponse.getCode() != 200) {
+                NotificationUtil.showErrorDialog(null, "创建失败: " + apiResponse.getMessage());
+                return false;
+            }
+            return true;
+        } catch (Exception e) {
+            NotificationUtil.showErrorDialog(null, "创建目录时发生异常: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public boolean updateDir(Long id, Long parentId, String name) {
+        String url = AppConfig.BASE_URL + AppConfig.DIR_URL;
+        try {
+            UpdateDirRequest request = new UpdateDirRequest(id, parentId, name);
+            HttpResponse response = HttpClientService.createPutRequest(url, true)
+                    .body(JSONUtil.toJsonStr(request))
+                    .contentType("application/json")
+                    .execute();
+
+            BackendResponse<?> apiResponse = JSONUtil.toBean(response.body(), BackendResponse.class);
+            if (apiResponse.getCode() != 200) {
+                NotificationUtil.showErrorDialog(null, "重命名失败: " + apiResponse.getMessage());
+                return false;
+            }
+            return true;
+        } catch (Exception e) {
+            NotificationUtil.showErrorDialog(null, "重命名目录时发生异常: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public boolean deleteDir(Long id) {
+        String url = AppConfig.BASE_URL + AppConfig.DIR_URL + "/" + id;
+        try {
+            HttpResponse response = HttpClientService.createDeleteRequest(url, true).execute();
+            BackendResponse<?> apiResponse = JSONUtil.toBean(response.body(), BackendResponse.class);
+            if (apiResponse.getCode() != 200) {
+                NotificationUtil.showErrorDialog(null, "删除失败: " + apiResponse.getMessage());
+                return false;
+            }
+            return true;
+        } catch (Exception e) {
+            NotificationUtil.showErrorDialog(null, "删除目录时发生异常: " + e.getMessage());
+            e.printStackTrace();
+            return false;
         }
     }
 }
