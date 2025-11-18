@@ -699,280 +699,300 @@ public class FileExplorerPanel extends JPanel {
                     }
                 }
             
-                        private JPopupMenu createCloudBackgroundPopupMenu() {
+                            private JPopupMenu createCloudBackgroundPopupMenu() {
             
-                            JPopupMenu popupMenu = new JPopupMenu();
+                                JPopupMenu popupMenu = new JPopupMenu();
             
-                            JMenuItem newDirItem = new JMenuItem("新建目录");
+                                JMenuItem newDirItem = new JMenuItem("新建目录");
             
-                            newDirItem.addActionListener(e -> {
+                                newDirItem.addActionListener(e -> {
             
-                                if (cloudApiRoot == null) {
+                                    if (cloudApiRoot == null) {
             
-                                    NotificationUtil.showErrorDialog(this, "无法获取根目录信息，请先刷新。");
+                                        NotificationUtil.showErrorDialog(this, "无法获取根目录信息，请先刷新。");
             
-                                    return;
+                                        return;
             
-                                }
+                                    }
             
-                                String dirName = JOptionPane.showInputDialog(this, "请输入新目录名称:", "新建目录", JOptionPane.PLAIN_MESSAGE);
+                                    String dirName = JOptionPane.showInputDialog(this, "请输入新目录名称:", "新建目录", JOptionPane.PLAIN_MESSAGE);
             
-                                if (dirName != null && !dirName.trim().isEmpty()) {
+                                    if (dirName != null && !dirName.trim().isEmpty()) {
             
-                                    LoadingDialog loadingDialog = new LoadingDialog((Frame) SwingUtilities.getWindowAncestor(FileExplorerPanel.this));
+                                        LoadingDialog loadingDialog = new LoadingDialog((Frame) SwingUtilities.getWindowAncestor(FileExplorerPanel.this));
             
-                                    final String finalDirName = dirName;
+                                        final String finalDirName = dirName;
             
-                    
+                        
             
-                                    SwingWorker<Boolean, Void> worker = new SwingWorker<>() {
+                                        SwingWorker<DirTreeResponse, Void> worker = new SwingWorker<>() {
             
-                                        @Override
+                                            @Override
             
-                                        protected Boolean doInBackground() throws Exception {
+                                            protected DirTreeResponse doInBackground() throws Exception {
             
-                                            return dirService.createDir(cloudApiRoot.getId(), finalDirName);
-            
-                                        }
-            
-                    
-            
-                                        @Override
-            
-                                        protected void done() {
-            
-                                            loadingDialog.dispose();
-            
-                                            try {
-            
-                                                if (get()) {
-            
-                                                    loadCloudDirectory();
-            
-                                                }
-            
-                                            } catch (Exception ex) {
-            
-                                                ex.printStackTrace();
+                                                return dirService.createDir(cloudApiRoot.getId(), finalDirName);
             
                                             }
             
-                                        }
+                        
             
-                                    };
+                                            @Override
             
-                                    worker.execute();
+                                            protected void done() {
             
-                                    loadingDialog.setVisible(true);
+                                                loadingDialog.dispose();
             
-                                }
+                                                try {
             
-                            });
+                                                    DirTreeResponse newDir = get();
             
-                            popupMenu.add(newDirItem);
+                                                    if (newDir != null) {
             
-                            return popupMenu;
+                                                        DefaultMutableTreeNode parentNode = (DefaultMutableTreeNode) cloudRootNode.getFirstChild();
             
-                        }
+                                                        DefaultMutableTreeNode newNode = new DefaultMutableTreeNode(newDir);
             
-                    
+                                                        cloudTreeModel.insertNodeInto(newNode, parentNode, parentNode.getChildCount());
             
-                        private JPopupMenu createCloudDirPopupMenu(DefaultMutableTreeNode node) {
+                                                        // Optional: scroll to the new node
             
-                            JPopupMenu popupMenu = new JPopupMenu();
+                                                        cloudFileTree.scrollPathToVisible(new TreePath(newNode.getPath()));
             
-                            DirTreeResponse dir = (DirTreeResponse) node.getUserObject();
+                                                    }
             
-                    
+                                                } catch (Exception ex) {
             
-                            JMenuItem newDirItem = new JMenuItem("新建目录");
-            
-                            newDirItem.addActionListener(e -> {
-            
-                                String dirName = JOptionPane.showInputDialog(this, "请输入新目录名称:", "新建目录", JOptionPane.PLAIN_MESSAGE);
-            
-                                if (dirName != null && !dirName.trim().isEmpty()) {
-            
-                                    LoadingDialog loadingDialog = new LoadingDialog((Frame) SwingUtilities.getWindowAncestor(FileExplorerPanel.this));
-            
-                                    final String finalDirName = dirName;
-            
-                    
-            
-                                    SwingWorker<Boolean, Void> worker = new SwingWorker<>() {
-            
-                                        @Override
-            
-                                        protected Boolean doInBackground() throws Exception {
-            
-                                            return dirService.createDir(dir.getId(), finalDirName);
-            
-                                        }
-            
-                    
-            
-                                        @Override
-            
-                                        protected void done() {
-            
-                                            loadingDialog.dispose();
-            
-                                            try {
-            
-                                                if (get()) {
-            
-                                                    loadCloudDirectory();
+                                                    ex.printStackTrace();
             
                                                 }
             
-                                            } catch (Exception ex) {
+                                            }
             
-                                                ex.printStackTrace();
+                                        };
+            
+                                        worker.execute();
+            
+                                        loadingDialog.setVisible(true);
+            
+                                    }
+            
+                                });
+            
+                                popupMenu.add(newDirItem);
+            
+                                return popupMenu;
+            
+                            }
+            
+                        
+            
+                            private JPopupMenu createCloudDirPopupMenu(DefaultMutableTreeNode node) {
+            
+                                JPopupMenu popupMenu = new JPopupMenu();
+            
+                                DirTreeResponse dir = (DirTreeResponse) node.getUserObject();
+            
+                        
+            
+                                JMenuItem newDirItem = new JMenuItem("新建目录");
+            
+                                newDirItem.addActionListener(e -> {
+            
+                                    String dirName = JOptionPane.showInputDialog(this, "请输入新目录名称:", "新建目录", JOptionPane.PLAIN_MESSAGE);
+            
+                                    if (dirName != null && !dirName.trim().isEmpty()) {
+            
+                                        LoadingDialog loadingDialog = new LoadingDialog((Frame) SwingUtilities.getWindowAncestor(FileExplorerPanel.this));
+            
+                                        final String finalDirName = dirName;
+            
+                        
+            
+                                        SwingWorker<DirTreeResponse, Void> worker = new SwingWorker<>() {
+            
+                                            @Override
+            
+                                            protected DirTreeResponse doInBackground() throws Exception {
+            
+                                                return dirService.createDir(dir.getId(), finalDirName);
             
                                             }
             
-                                        }
+                        
             
-                                    };
+                                            @Override
             
-                                    worker.execute();
+                                            protected void done() {
             
-                                    loadingDialog.setVisible(true);
+                                                loadingDialog.dispose();
             
-                                }
+                                                try {
             
-                            });
+                                                    DirTreeResponse newDir = get();
             
-                            popupMenu.add(newDirItem);
+                                                    if (newDir != null) {
             
-                    
+                                                        DefaultMutableTreeNode newNode = new DefaultMutableTreeNode(newDir);
             
-                            popupMenu.addSeparator();
+                                                        cloudTreeModel.insertNodeInto(newNode, node, node.getChildCount());
             
-                    
+                                                        cloudFileTree.scrollPathToVisible(new TreePath(newNode.getPath()));
             
-                            JMenuItem renameItem = new JMenuItem("重命名");
+                                                    }
             
-                            renameItem.addActionListener(e -> {
+                                                } catch (Exception ex) {
             
-                                String newName = (String) JOptionPane.showInputDialog(this, "请输入新名称:", "重命名", JOptionPane.PLAIN_MESSAGE, null, null, dir.getName());
-            
-                                if (newName != null && !newName.trim().isEmpty()) {
-            
-                                    LoadingDialog loadingDialog = new LoadingDialog((Frame) SwingUtilities.getWindowAncestor(FileExplorerPanel.this));
-            
-                                    final String finalNewName = newName;
-            
-                    
-            
-                                    SwingWorker<Boolean, Void> worker = new SwingWorker<>() {
-            
-                                        @Override
-            
-                                        protected Boolean doInBackground() throws Exception {
-            
-                                            return dirService.updateDir(dir.getId(), dir.getParentId(), finalNewName);
-            
-                                        }
-            
-                    
-            
-                                        @Override
-            
-                                        protected void done() {
-            
-                                            loadingDialog.dispose();
-            
-                                            try {
-            
-                                                if (get()) {
-            
-                                                    loadCloudDirectory();
+                                                    ex.printStackTrace();
             
                                                 }
             
-                                            } catch (Exception ex) {
+                                            }
             
-                                                ex.printStackTrace();
+                                        };
+            
+                                        worker.execute();
+            
+                                        loadingDialog.setVisible(true);
+            
+                                    }
+            
+                                });
+            
+                                popupMenu.add(newDirItem);
+            
+                        
+            
+                                popupMenu.addSeparator();
+            
+                        
+            
+                                JMenuItem renameItem = new JMenuItem("重命名");
+            
+                                renameItem.addActionListener(e -> {
+            
+                                    String newName = (String) JOptionPane.showInputDialog(this, "请输入新名称:", "重命名", JOptionPane.PLAIN_MESSAGE, null, null, dir.getName());
+            
+                                    if (newName != null && !newName.trim().isEmpty()) {
+            
+                                        LoadingDialog loadingDialog = new LoadingDialog((Frame) SwingUtilities.getWindowAncestor(FileExplorerPanel.this));
+            
+                                        final String finalNewName = newName;
+            
+                        
+            
+                                        SwingWorker<DirTreeResponse, Void> worker = new SwingWorker<>() {
+            
+                                            @Override
+            
+                                            protected DirTreeResponse doInBackground() throws Exception {
+            
+                                                return dirService.updateDir(dir.getId(), dir.getParentId(), finalNewName);
             
                                             }
             
-                                        }
+                        
             
-                                    };
+                                            @Override
             
-                                    worker.execute();
+                                            protected void done() {
             
-                                    loadingDialog.setVisible(true);
+                                                loadingDialog.dispose();
             
-                                }
+                                                try {
             
-                            });
+                                                    DirTreeResponse updatedDir = get();
             
-                            popupMenu.add(renameItem);
+                                                    if (updatedDir != null) {
             
-                    
+                                                        dir.setName(updatedDir.getName()); // Update the name in the existing user object
             
-                            JMenuItem deleteItem = new JMenuItem("删除");
+                                                        cloudTreeModel.nodeChanged(node);
             
-                            deleteItem.addActionListener(e -> {
+                                                    }
             
-                                int result = JOptionPane.showConfirmDialog(this, "确定要删除 '" + dir.getName() + "' 吗?", "确认删除", JOptionPane.YES_NO_OPTION);
+                                                } catch (Exception ex) {
             
-                                if (result == JOptionPane.YES_OPTION) {
-            
-                                    LoadingDialog loadingDialog = new LoadingDialog((Frame) SwingUtilities.getWindowAncestor(FileExplorerPanel.this));
-            
-                                    SwingWorker<Boolean, Void> worker = new SwingWorker<>() {
-            
-                                        @Override
-            
-                                        protected Boolean doInBackground() throws Exception {
-            
-                                            return dirService.deleteDir(dir.getId());
-            
-                                        }
-            
-                    
-            
-                                        @Override
-            
-                                        protected void done() {
-            
-                                            loadingDialog.dispose();
-            
-                                            try {
-            
-                                                if (get()) {
-            
-                                                    loadCloudDirectory();
+                                                    ex.printStackTrace();
             
                                                 }
             
-                                            } catch (Exception ex) {
+                                            }
             
-                                                ex.printStackTrace();
+                                        };
+            
+                                        worker.execute();
+            
+                                        loadingDialog.setVisible(true);
+            
+                                    }
+            
+                                });
+            
+                                popupMenu.add(renameItem);
+            
+                        
+            
+                                JMenuItem deleteItem = new JMenuItem("删除");
+            
+                                deleteItem.addActionListener(e -> {
+            
+                                    int result = JOptionPane.showConfirmDialog(this, "确定要删除 '" + dir.getName() + "' 吗?", "确认删除", JOptionPane.YES_NO_OPTION);
+            
+                                    if (result == JOptionPane.YES_OPTION) {
+            
+                                        LoadingDialog loadingDialog = new LoadingDialog((Frame) SwingUtilities.getWindowAncestor(FileExplorerPanel.this));
+            
+                                        SwingWorker<Boolean, Void> worker = new SwingWorker<>() {
+            
+                                            @Override
+            
+                                            protected Boolean doInBackground() throws Exception {
+            
+                                                return dirService.deleteDir(dir.getId());
             
                                             }
             
-                                        }
+                        
             
-                                    };
+                                            @Override
             
-                                    worker.execute();
+                                            protected void done() {
             
-                                    loadingDialog.setVisible(true);
+                                                loadingDialog.dispose();
             
-                                }
+                                                try {
             
-                            });
+                                                    if (get()) {
             
-                            popupMenu.add(deleteItem);
+                                                        cloudTreeModel.removeNodeFromParent(node);
             
-                    
+                                                    }
             
-                            return popupMenu;
+                                                } catch (Exception ex) {
             
-                        }
+                                                    ex.printStackTrace();
+            
+                                                }
+            
+                                            }
+            
+                                        };
+            
+                                        worker.execute();
+            
+                                        loadingDialog.setVisible(true);
+            
+                                    }
+            
+                                });
+            
+                                popupMenu.add(deleteItem);
+            
+                        
+            
+                                return popupMenu;
+            
+                            }
             }
             

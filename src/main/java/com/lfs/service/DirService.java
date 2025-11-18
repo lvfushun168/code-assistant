@@ -47,7 +47,7 @@ public class DirService {
         }
     }
 
-    public boolean createDir(Long parentId, String name) {
+    public DirTreeResponse createDir(Long parentId, String name) {
         String url = AppConfig.BASE_URL + AppConfig.DIR_URL;
         try {
             CreateDirRequest request = new CreateDirRequest(parentId, name);
@@ -56,20 +56,22 @@ public class DirService {
                     .contentType("application/json")
                     .execute();
 
-            BackendResponse<?> apiResponse = JSONUtil.toBean(response.body(), BackendResponse.class);
+            TypeReference<BackendResponse<DirTreeResponse>> typeRef = new TypeReference<>() {};
+            BackendResponse<DirTreeResponse> apiResponse = JSONUtil.toBean(response.body(), typeRef, false);
+
             if (apiResponse.getCode() != 200) {
                 NotificationUtil.showErrorDialog(null, "创建失败: " + apiResponse.getMessage());
-                return false;
+                return null;
             }
-            return true;
+            return apiResponse.getData();
         } catch (Exception e) {
             NotificationUtil.showErrorDialog(null, "创建目录时发生异常: " + e.getMessage());
             e.printStackTrace();
-            return false;
+            return null;
         }
     }
 
-    public boolean updateDir(Long id, Long parentId, String name) {
+    public DirTreeResponse updateDir(Long id, Long parentId, String name) {
         String url = AppConfig.BASE_URL + AppConfig.DIR_URL;
         try {
             UpdateDirRequest request = new UpdateDirRequest(id, parentId, name);
@@ -78,16 +80,18 @@ public class DirService {
                     .contentType("application/json")
                     .execute();
 
-            BackendResponse<?> apiResponse = JSONUtil.toBean(response.body(), BackendResponse.class);
+            TypeReference<BackendResponse<DirTreeResponse>> typeRef = new TypeReference<>() {};
+            BackendResponse<DirTreeResponse> apiResponse = JSONUtil.toBean(response.body(), typeRef, false);
+
             if (apiResponse.getCode() != 200) {
                 NotificationUtil.showErrorDialog(null, "重命名失败: " + apiResponse.getMessage());
-                return false;
+                return null;
             }
-            return true;
+            return apiResponse.getData();
         } catch (Exception e) {
             NotificationUtil.showErrorDialog(null, "重命名目录时发生异常: " + e.getMessage());
             e.printStackTrace();
-            return false;
+            return null;
         }
     }
 
