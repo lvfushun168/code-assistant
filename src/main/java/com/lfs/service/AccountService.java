@@ -22,9 +22,9 @@ import java.util.UUID;
 @Slf4j
 public class AccountService {
 
-//    private static final String REGISTER_URL = "http://8.148.146.195:8080/lfs-code-assistant/account/register";
-//    private static final String LOGIN_URL = "http://8.148.146.195:8080/lfs-code-assistant/account/login";
-//    private static final String CAPTCHA_URL = "http://8.148.146.195:8080/lfs-code-assistant/captcha/generate";
+//    private static final String REGISTER_URL = "https://8.148.146.195/lfs-code-assistant/account/register";
+//    private static final String LOGIN_URL = "https://8.148.146.195/lfs-code-assistant/account/login";
+//    private static final String CAPTCHA_URL = "https://8.148.146.195/lfs-code-assistant/captcha/generate";
     private static final String REGISTER_URL = "http://localhost:6324/lfs-code-assistant/account/register";
     private static final String LOGIN_URL = "http://localhost:6324/lfs-code-assistant/account/login";
     private static final String CAPTCHA_URL = "http://localhost:6324/lfs-code-assistant/captcha/generate";

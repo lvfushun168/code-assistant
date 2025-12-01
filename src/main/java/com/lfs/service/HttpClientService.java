@@ -3,6 +3,7 @@ package com.lfs.service;
 import cn.hutool.http.HttpRequest;
 
 import javax.net.ssl.*;
+import java.net.Proxy;
 import java.security.cert.X509Certificate;
 
 public class HttpClientService {
@@ -29,7 +30,7 @@ public class HttpClientService {
             };
 
             // 安装这个 all-trusting trust manager
-            SSLContext sc = SSLContext.getInstance("SSL");
+            SSLContext sc = SSLContext.getInstance("TLSv1.2");
             sc.init(null, trustAllCerts, new java.security.SecureRandom());
             TRUST_ALL_SSL_FACTORY = sc.getSocketFactory();
 
@@ -51,11 +52,14 @@ public class HttpClientService {
     }
 
     /**
-     * 为HTTPS请求设置信任所有证书和主机名
-     *
+     * 强制无代理并信任所有SSL
      * @param request HttpRequest
      */
-    private static void applySsl(HttpRequest request) {
+    private static void configureRequest(HttpRequest request) {
+        // 1. 强制不使用任何代理，直接连接
+        request.setProxy(Proxy.NO_PROXY);
+
+        // 2. 为HTTPS请求设置信任所有证书和主机名
         if (request.getUrl().startsWith("https")) {
             request.setSSLSocketFactory(TRUST_ALL_SSL_FACTORY);
             request.setHostnameVerifier(TRUST_ALL_HOSTNAME_VERIFIER);
@@ -64,32 +68,33 @@ public class HttpClientService {
 
     public static HttpRequest createGetRequest(String url, Boolean carryToken) {
         HttpRequest request = HttpRequest.get(url);
-        applySsl(request);
+        configureRequest(request);
         return applyAuth(request, carryToken);
     }
 
     public static HttpRequest createPostRequest(String url) {
         HttpRequest request = HttpRequest.post(url);
-        applySsl(request);
+        configureRequest(request);
         return applyAuth(request, true);
     }
 
     public static HttpRequest createPostRequest(String url, Boolean carryToken) {
         HttpRequest request = HttpRequest.post(url);
-        applySsl(request);
+        configureRequest(request);
         return applyAuth(request, carryToken);
     }
 
     public static HttpRequest createPutRequest(String url, Boolean carryToken) {
         HttpRequest request = HttpRequest.put(url);
-        applySsl(request);
+        configureRequest(request);
         return applyAuth(request, carryToken);
     }
 
     public static HttpRequest createDeleteRequest(String url, Boolean carryToken) {
         HttpRequest request = HttpRequest.delete(url);
-        applySsl(request);
+        configureRequest(request);
         return applyAuth(request, carryToken);
     }
 }
+
 
