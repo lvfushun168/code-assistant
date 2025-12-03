@@ -310,7 +310,7 @@ public class MainFrameController {
                         if (response != null) {
                             activeEditorPanel.setNewCloudFile(false);
                             activeEditorPanel.setCloudContentId(response.getId());
-                            NotificationUtil.showSaveSuccess(mainFrame);
+                            NotificationUtil.showToast(mainFrame, "保存成功！");
                             // 局部刷新云目录，添加新节点
                             mainFrame.getFileExplorerPanel().addCloudContentNode(response);
                         }
@@ -347,7 +347,7 @@ public class MainFrameController {
                     try {
                         ContentResponse response = get();
                         if (response != null) {
-                            NotificationUtil.showSaveSuccess(mainFrame);
+                            NotificationUtil.showToast(mainFrame, "保存成功！");
                             // 由于只是内容更新，UI上暂时不需要做额外刷新
                         }
                     } catch (Exception e) {
