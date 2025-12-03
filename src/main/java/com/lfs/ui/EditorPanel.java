@@ -21,7 +21,6 @@ public class EditorPanel extends JPanel {
 
     // 云文件相关状态
     private boolean isCloudFile = false;
-    private boolean isNewCloudFile = false; // 标记是否为尚未保存的新建云文件
     private Long cloudContentId;
     private Long cloudDirId;
     private String cloudTitle;
@@ -43,14 +42,6 @@ public class EditorPanel extends JPanel {
 
     public void setCloudFile(boolean cloudFile) {
         isCloudFile = cloudFile;
-    }
-
-    public boolean isNewCloudFile() {
-        return isNewCloudFile;
-    }
-
-    public void setNewCloudFile(boolean newCloudFile) {
-        isNewCloudFile = newCloudFile;
     }
 
     public Long getCloudContentId() {

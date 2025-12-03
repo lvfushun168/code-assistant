@@ -221,8 +221,34 @@ public class MainFrameController {
         mainFrame.openCloudFileInTab(fileInfo, content);
     }
 
-    public void onNewCloudFileRequested(Long dirId, String title) {
-        mainFrame.openNewCloudFileInTab(dirId, title);
+    public void createAndOpenCloudFile(Long dirId, String title) {
+        mainFrame.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+        new SwingWorker<ContentResponse, Void>() {
+            @Override
+            protected ContentResponse doInBackground() throws Exception {
+                // 立即创建一个内容为空的文档
+                return contentService.createContent(dirId, title, "");
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    ContentResponse response = get();
+                    if (response != null) {
+                        // 1. 刷新目录树
+                        mainFrame.getFileExplorerPanel().addCloudContentNode(response);
+                        // 2. 打开新创建的空文件
+                        mainFrame.openCloudFileInTab(response, "");
+                        NotificationUtil.showToast(mainFrame, "创建成功！");
+                    }
+                } catch (Exception e) {
+                    NotificationUtil.showErrorDialog(mainFrame, "创建失败: " + e.getMessage());
+                    e.printStackTrace();
+                } finally {
+                    mainFrame.setCursor(Cursor.getDefaultCursor());
+                }
+            }
+        }.execute();
     }
 
     public void renameCloudFile(Long contentId, Long dirId, String newTitle) {
@@ -285,80 +311,41 @@ public class MainFrameController {
         }
         EditorPanel activeEditorPanel = (EditorPanel) activeComponent;
 
-        if (activeEditorPanel.isNewCloudFile()) {
-            Long dirId = activeEditorPanel.getCloudDirId();
-            String title = activeEditorPanel.getCloudTitle();
-            String content = activeEditorPanel.getTextAreaContent();
+        // 由于新建流程已改变，这里只处理更新逻辑
+        Long contentId = activeEditorPanel.getCloudContentId();
+        Long dirId = activeEditorPanel.getCloudDirId();
+        String title = activeEditorPanel.getCloudTitle();
+        String content = activeEditorPanel.getTextAreaContent();
 
-            if (title == null || dirId == null) {
-                NotificationUtil.showErrorDialog(mainFrame, "无法保存新文件，缺少目录或标题信息。");
-                return;
-            }
-
-            mainFrame.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
-
-            new SwingWorker<ContentResponse, Void>() {
-                @Override
-                protected ContentResponse doInBackground() {
-                    return contentService.createContent(dirId, title, content);
-                }
-
-                @Override
-                protected void done() {
-                    try {
-                        ContentResponse response = get();
-                        if (response != null) {
-                            activeEditorPanel.setNewCloudFile(false);
-                            activeEditorPanel.setCloudContentId(response.getId());
-                            NotificationUtil.showToast(mainFrame, "保存成功！");
-                            // 局部刷新云目录，添加新节点
-                            mainFrame.getFileExplorerPanel().addCloudContentNode(response);
-                        }
-                    } catch (Exception e) {
-                        NotificationUtil.showErrorDialog(mainFrame, "保存云文件失败: " + e.getMessage());
-                        e.printStackTrace();
-                    } finally {
-                        mainFrame.setCursor(Cursor.getDefaultCursor());
-                    }
-                }
-            }.execute();
-        } else {
-            // 这是更新现有云文件的逻辑
-            Long contentId = activeEditorPanel.getCloudContentId();
-            Long dirId = activeEditorPanel.getCloudDirId();
-            String title = activeEditorPanel.getCloudTitle();
-            String content = activeEditorPanel.getTextAreaContent();
-
-            if (contentId == null) {
-                NotificationUtil.showErrorDialog(mainFrame, "无法保存文件，文档ID丢失。");
-                return;
-            }
-
-            mainFrame.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
-
-            new SwingWorker<ContentResponse, Void>() {
-                @Override
-                protected ContentResponse doInBackground() {
-                    return contentService.updateContent(contentId, dirId, title, content);
-                }
-
-                @Override
-                protected void done() {
-                    try {
-                        ContentResponse response = get();
-                        if (response != null) {
-                            NotificationUtil.showToast(mainFrame, "保存成功！");
-                            // 由于只是内容更新，UI上暂时不需要做额外刷新
-                        }
-                    } catch (Exception e) {
-                        NotificationUtil.showErrorDialog(mainFrame, "更新云文件失败: " + e.getMessage());
-                        e.printStackTrace();
-                    } finally {
-                        mainFrame.setCursor(Cursor.getDefaultCursor());
-                    }
-                }
-            }.execute();
+        if (contentId == null) {
+            NotificationUtil.showErrorDialog(mainFrame, "无法保存文件，文档ID丢失。");
+            return;
         }
+
+        mainFrame.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+
+        new SwingWorker<ContentResponse, Void>() {
+            @Override
+            protected ContentResponse doInBackground() {
+                return contentService.updateContent(contentId, dirId, title, content);
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    ContentResponse response = get();
+                    if (response != null) {
+                        NotificationUtil.showToast(mainFrame, "保存成功！");
+                        // 由于只是内容更新，UI上暂时不需要做额外刷新
+                    }
+                } catch (Exception e) {
+                    NotificationUtil.showErrorDialog(mainFrame, "更新云文件失败: " + e.getMessage());
+                    e.printStackTrace();
+                } finally {
+                    mainFrame.setCursor(Cursor.getDefaultCursor());
+                }
+            }
+        }.execute();
     }
 
 

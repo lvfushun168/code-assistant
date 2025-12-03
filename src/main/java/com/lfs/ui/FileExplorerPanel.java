@@ -1091,7 +1091,7 @@ public class FileExplorerPanel extends JPanel {
         }
         String title = JOptionPane.showInputDialog(this, "请输入新文档名称 (无需扩展名):", "新建云端文档", JOptionPane.PLAIN_MESSAGE);
         if (title != null && !title.trim().isEmpty()) {
-            controller.onNewCloudFileRequested(dirId, title.trim());
+            controller.createAndOpenCloudFile(dirId, title.trim());
         }
     }
 

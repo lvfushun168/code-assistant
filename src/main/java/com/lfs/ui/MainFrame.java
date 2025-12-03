@@ -379,7 +379,7 @@ public class MainFrame extends JFrame {
             if (tab instanceof EditorPanel) {
                 EditorPanel panel = (EditorPanel) tab;
                 // 通过比较ContentId来判断是否为同一个云文件
-                if (panel.isCloudFile() && fileInfo.getId().equals(panel.getCloudContentId())) {
+                if (panel.isCloudFile() && fileInfo.getId() != null && fileInfo.getId().equals(panel.getCloudContentId())) {
                     tabbedPane.setSelectedIndex(i); // 切换到已存在的选项卡
                     return;
                 }
@@ -393,7 +393,6 @@ public class MainFrame extends JFrame {
 
         // 设置云文件相关的所有状态
         newEditorPanel.setCloudFile(true);
-        newEditorPanel.setNewCloudFile(false); // 这是已存在的文件，不是新文件
         newEditorPanel.setCloudContentId(fileInfo.getId());
         newEditorPanel.setCloudDirId(fileInfo.getDirId());
         newEditorPanel.setCloudTitle(fileInfo.getTitle());
@@ -401,20 +400,6 @@ public class MainFrame extends JFrame {
 
         // 添加到 tabbedPane
         addTab(fileInfo.getTitle(), newEditorPanel);
-    }
-
-    public void openNewCloudFileInTab(Long dirId, String title) {
-        // 创建一个新的 EditorPanel 用于未保存的云文件
-        EditorPanel newEditorPanel = new EditorPanel(controller, preferencesService);
-        newEditorPanel.setCloudFile(true);
-        newEditorPanel.setNewCloudFile(true);
-        newEditorPanel.setCloudDirId(dirId);
-        newEditorPanel.setCloudTitle(title);
-        // 默认为纯文本
-        newEditorPanel.setSyntaxStyle("txt");
-
-        // 添加到 tabbedPane
-        addTab(title, newEditorPanel);
     }
 
     public void openFile(File file) {
