@@ -48,6 +48,7 @@ public class FileExplorerPanel extends JPanel {
     private DefaultTreeModel cloudTreeModel;
     private DefaultMutableTreeNode cloudRootNode;
     private DirService dirService;
+    private ContentService contentService;
     private DirTreeResponse cloudApiRoot;
 
 
@@ -57,6 +58,7 @@ public class FileExplorerPanel extends JPanel {
         this.prefsService = new UserPreferencesService();
         this.fileProcessorService = new FileProcessorService();
         this.dirService = new DirService();
+        this.contentService = new ContentService();
 
         rootNode = new DefaultMutableTreeNode();
         treeModel = new DefaultTreeModel(rootNode);
@@ -168,14 +170,46 @@ public class FileExplorerPanel extends JPanel {
         cloudFileTree.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
+                // 双击事件
                 if (e.getClickCount() == 2) {
                     TreePath path = cloudFileTree.getPathForLocation(e.getX(), e.getY());
                     if (path != null) {
                         DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
                         Object userObject = node.getUserObject();
+                        // 检查节点是否为文件
                         if (userObject instanceof ContentResponse) {
-                            ContentResponse fileContent = (ContentResponse) userObject;
-                            controller.onCloudFileSelected(fileContent.getTitle(), fileContent.getContent());
+                            ContentResponse fileInfo = (ContentResponse) userObject;
+
+                            // 设置等待光标
+                            setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+
+                            // 使用SwingWorker在后台线程下载文件内容，避免UI冻结
+                            new SwingWorker<String, Void>() {
+                                @Override
+                                protected String doInBackground() {
+                                    // 调用服务层方法下载文件
+                                    return contentService.downloadContent(fileInfo.getId());
+                                }
+
+                                @Override
+                                protected void done() {
+                                    try {
+                                        // 获取下载的内容
+                                        String content = get();
+                                        if (content != null) {
+                                            // 通知控制器打开新标签页
+                                            controller.onCloudFileSelected(fileInfo.getTitle(), content);
+                                        }
+                                    } catch (Exception ex) {
+                                        // 异常处理
+                                        NotificationUtil.showErrorDialog(FileExplorerPanel.this, "加载云端文件失败: " + ex.getMessage());
+                                        ex.printStackTrace();
+                                    } finally {
+                                        // 恢复默认光标
+                                        setCursor(Cursor.getDefaultCursor());
+                                    }
+                                }
+                            }.execute();
                         }
                     }
                 }
