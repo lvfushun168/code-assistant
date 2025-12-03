@@ -2,6 +2,7 @@ package com.lfs.service;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.TypeReference;
+import com.lfs.config.AppConfig;
 import com.lfs.domain.BackendResponse;
 import com.lfs.domain.CaptchaResponse;
 import com.lfs.domain.LoginRequest;
@@ -22,13 +23,6 @@ import java.util.UUID;
 @Slf4j
 public class AccountService {
 
-//    private static final String REGISTER_URL = "https://8.148.146.195/lfs-code-assistant/account/register";
-//    private static final String LOGIN_URL = "https://8.148.146.195/lfs-code-assistant/account/login";
-//    private static final String CAPTCHA_URL = "https://8.148.146.195/lfs-code-assistant/captcha/generate";
-    private static final String REGISTER_URL = "http://localhost:6324/lfs-code-assistant/account/register";
-    private static final String LOGIN_URL = "http://localhost:6324/lfs-code-assistant/account/login";
-    private static final String CAPTCHA_URL = "http://localhost:6324/lfs-code-assistant/captcha/generate";
-
     /**
      * 注册新用户
      *
@@ -46,7 +40,7 @@ public class AccountService {
             user.setNickname(username);
             user.setCaptcha(captcha);
 
-            HttpResponse response = HttpClientService.createPostRequest(REGISTER_URL, false)
+            HttpResponse response = HttpClientService.createPostRequest(AppConfig.BASE_URL + AppConfig.REGISTER_URL, false)
                     .cookie("captchaCode=" + captchaId)
                     .body(JSON.toJSONString(user))
                     .contentType("application/json")
@@ -76,7 +70,7 @@ public class AccountService {
             loginRequest.setNonce(UUID.randomUUID().toString()); // 生成随机 nonce
             loginRequest.setTimestamp(String.valueOf(System.currentTimeMillis())); // 获取当前时间戳
 
-            HttpResponse response = HttpClientService.createPostRequest(LOGIN_URL, false)
+            HttpResponse response = HttpClientService.createPostRequest(AppConfig.BASE_URL + AppConfig.LOGIN_URL, false)
                     .cookie("captchaCode=" + captchaId)
                     .body(JSON.toJSONString(loginRequest))
                     .contentType("application/json")
@@ -96,7 +90,7 @@ public class AccountService {
 
     public CaptchaResponse getCaptcha() {
         try {
-            HttpResponse response = HttpClientService.createGetRequest(CAPTCHA_URL, false).execute();
+            HttpResponse response = HttpClientService.createGetRequest(AppConfig.BASE_URL + AppConfig.CAPTCHA_URL, false).execute();
             byte[] imageData = response.bodyBytes();
 
             // 从Cookie中获取captchaId
