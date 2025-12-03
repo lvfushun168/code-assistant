@@ -165,4 +165,27 @@ public class ContentService {
             return null;
         }
     }
+
+    /**
+     * 删除文档
+     * @param id 文档ID
+     * @return 操作是否成功
+     */
+    public boolean deleteContent(Long id) {
+        String url = AppConfig.BASE_URL + AppConfig.CONTENT_URL + "/" + id;
+        try {
+            HttpResponse response = HttpClientService.createDeleteRequest(url, true).execute();
+            String body = response.body();
+            ApiResponse apiResponse = JSONUtil.toBean(body, ApiResponse.class);
+
+            if (!apiResponse.isSuccess()) {
+                NotificationUtil.showErrorDialog(null, "删除文件失败: " + apiResponse.getMessage());
+            }
+            return apiResponse.isSuccess();
+        } catch (Exception e) {
+            NotificationUtil.showErrorDialog(null, "删除文件时发生异常: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
 }

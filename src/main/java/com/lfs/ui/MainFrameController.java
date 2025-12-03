@@ -253,6 +253,31 @@ public class MainFrameController {
         }.execute();
     }
 
+    public void deleteCloudFile(Long contentId) {
+        mainFrame.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+        new SwingWorker<Boolean, Void>() {
+            @Override
+            protected Boolean doInBackground() throws Exception {
+                return contentService.deleteContent(contentId);
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    if (get()) {
+                        NotificationUtil.showSuccessDialog(mainFrame, "删除成功！");
+                        mainFrame.getFileExplorerPanel().removeCloudContentNode(contentId);
+                    }
+                } catch (Exception e) {
+                    NotificationUtil.showErrorDialog(mainFrame, "删除失败: " + e.getMessage());
+                    e.printStackTrace();
+                } finally {
+                    mainFrame.setCursor(Cursor.getDefaultCursor());
+                }
+            }
+        }.execute();
+    }
+
     public void saveCloudFile() {
         Component activeComponent = mainFrame.getActiveEditorPanel();
         if (!(activeComponent instanceof EditorPanel)) {

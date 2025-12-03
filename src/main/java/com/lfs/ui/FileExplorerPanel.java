@@ -760,6 +760,23 @@ public class FileExplorerPanel extends JPanel {
                     });
                     popupMenu.add(renameItem);
 
+                    popupMenu.addSeparator();
+
+                    JMenuItem deleteItem = new JMenuItem("删除");
+                    deleteItem.addActionListener(e -> {
+                        int result = JOptionPane.showConfirmDialog(
+                                this,
+                                "确定要删除 '" + content.getTitle() + "' 吗?",
+                                "确认删除",
+                                JOptionPane.YES_NO_OPTION,
+                                JOptionPane.WARNING_MESSAGE
+                        );
+                        if (result == JOptionPane.YES_OPTION) {
+                            controller.deleteCloudFile(content.getId());
+                        }
+                    });
+                    popupMenu.add(deleteItem);
+
                     return popupMenu;
                 }
             
@@ -1167,7 +1184,22 @@ public class FileExplorerPanel extends JPanel {
                 if (foundNode != null) {
                     return foundNode;
                 }
+                    }
+                    return null;
+                }
+            
+                public void removeCloudContentNode(Long contentId) {
+                    if (contentId == null) {
+                        return;
+                    }
+                    DefaultMutableTreeNode apiRootNode = (DefaultMutableTreeNode) cloudRootNode.getFirstChild();
+                    DefaultMutableTreeNode nodeToRemove = findCloudContentNode(apiRootNode, contentId);
+            
+                    if (nodeToRemove != null) {
+                        cloudTreeModel.removeNodeFromParent(nodeToRemove);
+                    } else {
+                        // 如果找不到，可能已经被删了，或者树状态不一致，刷新整个树
+                        loadCloudDirectory();
+                    }
+                }
             }
-            return null;
-        }
-    }            
