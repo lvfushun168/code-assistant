@@ -111,6 +111,8 @@ public class FileExplorerPanel extends JPanel {
         cloudFileTree.setCellRenderer(new CloudFileTreeCellRenderer());
         cloudFileTree.setRootVisible(false);
         cloudFileTree.setShowsRootHandles(true);
+        cloudFileTree.setDragEnabled(true);
+        cloudFileTree.setTransferHandler(new CloudTreeTransferHandler(this.controller));
         JScrollPane cloudScrollPane = new JScrollPane(cloudFileTree);
         cloudPanel.add(cloudScrollPane, BorderLayout.CENTER);
 

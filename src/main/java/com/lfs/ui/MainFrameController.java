@@ -1,13 +1,12 @@
 package com.lfs.ui;
 
 import com.lfs.domain.ContentResponse;
-import com.lfs.service.ClipboardService;
-import com.lfs.service.ContentService;
-import com.lfs.service.FileProcessorService;
-import com.lfs.service.UserPreferencesService;
+import com.lfs.domain.DirTreeResponse;
+import com.lfs.service.*;
 import com.lfs.util.NotificationUtil;
 
 import javax.swing.*;
+import javax.swing.tree.DefaultMutableTreeNode;
 import java.awt.*;
 import java.io.File;
 import java.io.IOException;
@@ -19,6 +18,7 @@ public class MainFrameController {
     private final FileProcessorService fileProcessorService;
     private final UserPreferencesService preferencesService;
     private final ContentService contentService;
+    private final DirService dirService;
     private final MainFrame mainFrame;
 
     public MainFrameController(MainFrame mainFrame) {
@@ -26,6 +26,7 @@ public class MainFrameController {
         this.fileProcessorService = new FileProcessorService();
         this.preferencesService = new UserPreferencesService();
         this.contentService = new ContentService();
+        this.dirService = new DirService();
     }
 
     /**
@@ -296,6 +297,51 @@ public class MainFrameController {
                     }
                 } catch (Exception e) {
                     NotificationUtil.showErrorDialog(mainFrame, "删除失败: " + e.getMessage());
+                    e.printStackTrace();
+                } finally {
+                    mainFrame.setCursor(Cursor.getDefaultCursor());
+                }
+            }
+        }.execute();
+    }
+
+    public void moveCloudNode(DefaultMutableTreeNode nodeToMove, DefaultMutableTreeNode targetNode) {
+        Object draggedObject = nodeToMove.getUserObject();
+        DirTreeResponse targetDir = (DirTreeResponse) targetNode.getUserObject();
+        Long targetDirId = targetDir.getId();
+
+        System.out.println("尝试移动节点。 对象类型: " + (draggedObject != null ? draggedObject.getClass().getName() : "null"));
+        System.out.println("目标目录 ID: " + targetDirId);
+
+
+        mainFrame.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+
+        new SwingWorker<Boolean, Void>() {
+            @Override
+            protected Boolean doInBackground() throws Exception {
+                System.out.println("SwingWorker doInBackground 已启动。");
+                if (draggedObject instanceof ContentResponse) {
+                    ContentResponse content = (ContentResponse) draggedObject;
+                    // 内容传null，因为只移动，不更新内容
+                    return contentService.updateContent(content.getId(), targetDirId, content.getTitle(), null) != null;
+                } else if (draggedObject instanceof DirTreeResponse) {
+                    DirTreeResponse dir = (DirTreeResponse) draggedObject;
+                    return dirService.updateDir(dir.getId(), targetDirId, dir.getName()) != null;
+                }
+                System.out.println("未知的对象类型，返回 false。");
+                return false;
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    if (get()) {
+                        NotificationUtil.showToast(mainFrame, "移动成功！");
+                        mainFrame.getFileExplorerPanel().loadCloudDirectory();
+                    }
+                    // 无需else块，因为具体的错误已在服务层通过对话框显示
+                } catch (Exception e) {
+                    NotificationUtil.showErrorDialog(mainFrame, "移动操作失败: " + e.getMessage());
                     e.printStackTrace();
                 } finally {
                     mainFrame.setCursor(Cursor.getDefaultCursor());

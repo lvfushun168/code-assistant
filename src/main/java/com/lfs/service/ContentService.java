@@ -135,12 +135,12 @@ public class ContentService {
             var request = HttpClientService.createPutRequest(url, true)
                     .form("meta", metaResource);
 
-            // 2. 如果有内容，则构建文件部分
-            if (content != null) {
-                byte[] contentBytes = content.getBytes(StandardCharsets.UTF_8);
-                BytesResource fileResource = new BytesResource(contentBytes, title + ".txt");
-                request.form("file", fileResource);
-            }
+            // 2. 确保总是存在 file part，即使内容为空
+            String fileContent = (content != null) ? content : "";
+            byte[] contentBytes = fileContent.getBytes(StandardCharsets.UTF_8);
+            BytesResource fileResource = new BytesResource(contentBytes, title + ".txt");
+            request.form("file", fileResource);
+
 
             // 3. 发送multipart/form-data请求
             HttpResponse response = request.execute();
