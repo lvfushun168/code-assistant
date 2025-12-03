@@ -2,6 +2,7 @@ package com.lfs.ui;
 
 import cn.hutool.db.sql.SqlUtil;
 import cn.hutool.json.JSONUtil;
+import com.lfs.domain.ContentResponse;
 import com.lfs.service.JavaToJsonService;
 import com.lfs.service.JsonToJavaService;
 import com.lfs.service.UserPreferencesService;
@@ -371,25 +372,35 @@ public class MainFrame extends JFrame {
         addTab(file.getName(), newViewerPanel);
     }
 
-    public void openCloudFileInTab(String title, String content) {
+    public void openCloudFileInTab(ContentResponse fileInfo, String content) {
         // 检查是否已经打开
         for (int i = 0; i < tabbedPane.getTabCount(); i++) {
-            // 这里我们只通过标题来判断，因为没有File对象
-            if (title.equals(tabbedPane.getTitleAt(i))) {
-                tabbedPane.setSelectedIndex(i); // 切换到已存在的选项卡
-                return;
+            Component tab = tabbedPane.getComponentAt(i);
+            if (tab instanceof EditorPanel) {
+                EditorPanel panel = (EditorPanel) tab;
+                // 通过比较ContentId来判断是否为同一个云文件
+                if (panel.isCloudFile() && fileInfo.getId().equals(panel.getCloudContentId())) {
+                    tabbedPane.setSelectedIndex(i); // 切换到已存在的选项卡
+                    return;
+                }
             }
         }
 
         // 创建新的 EditorPanel
         EditorPanel newEditorPanel = new EditorPanel(controller, preferencesService);
-        // 对于云文件，我们没有File对象，所以不设置
-        // newEditorPanel.setCurrentFile(file);
         newEditorPanel.setTextAreaContent(content);
         newEditorPanel.getTextArea().setCaretPosition(0);
 
+        // 设置云文件相关的所有状态
+        newEditorPanel.setCloudFile(true);
+        newEditorPanel.setNewCloudFile(false); // 这是已存在的文件，不是新文件
+        newEditorPanel.setCloudContentId(fileInfo.getId());
+        newEditorPanel.setCloudDirId(fileInfo.getDirId());
+        newEditorPanel.setCloudTitle(fileInfo.getTitle());
+
+
         // 添加到 tabbedPane
-        addTab(title, newEditorPanel);
+        addTab(fileInfo.getTitle(), newEditorPanel);
     }
 
     public void openNewCloudFileInTab(Long dirId, String title) {

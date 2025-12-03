@@ -197,8 +197,8 @@ public class FileExplorerPanel extends JPanel {
                                         // 获取下载的内容
                                         String content = get();
                                         if (content != null) {
-                                            // 通知控制器打开新标签页
-                                            controller.onCloudFileSelected(fileInfo.getTitle(), content);
+                                            // 通知控制器打开新标签页，并传递完整的文件信息
+                                            controller.onCloudFileSelected(fileInfo, content);
                                         }
                                     } catch (Exception ex) {
                                         // 异常处理
@@ -726,11 +726,41 @@ public class FileExplorerPanel extends JPanel {
                         // Item click
                         cloudFileTree.setSelectionPath(path);
                         DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
-                        if (node.getUserObject() instanceof DirTreeResponse) {
+                        Object userObject = node.getUserObject();
+
+                        if (userObject instanceof DirTreeResponse) {
                             JPopupMenu popupMenu = createCloudDirPopupMenu(node);
+                            popupMenu.show(e.getComponent(), e.getX(), e.getY());
+                        } else if (userObject instanceof ContentResponse) {
+                            JPopupMenu popupMenu = createCloudFilePopupMenu(node);
                             popupMenu.show(e.getComponent(), e.getX(), e.getY());
                         }
                     }
+                }
+
+                private JPopupMenu createCloudFilePopupMenu(DefaultMutableTreeNode node) {
+                    JPopupMenu popupMenu = new JPopupMenu();
+                    ContentResponse content = (ContentResponse) node.getUserObject();
+
+                    JMenuItem renameItem = new JMenuItem("重命名");
+                    renameItem.addActionListener(e -> {
+                        String newName = (String) JOptionPane.showInputDialog(
+                                this,
+                                "请输入新名称:",
+                                "重命名",
+                                JOptionPane.PLAIN_MESSAGE,
+                                null,
+                                null,
+                                content.getTitle()
+                        );
+
+                        if (newName != null && !newName.trim().isEmpty() && !newName.trim().equals(content.getTitle())) {
+                            controller.renameCloudFile(content.getId(), content.getDirId(), newName.trim());
+                        }
+                    });
+                    popupMenu.add(renameItem);
+
+                    return popupMenu;
                 }
             
                             private JPopupMenu createCloudBackgroundPopupMenu() {
@@ -1078,28 +1108,66 @@ public class FileExplorerPanel extends JPanel {
     /**
      * 递归查找指定ID的云目录节点
      */
-    private DefaultMutableTreeNode findCloudDirectoryNode(DefaultMutableTreeNode currentNode, Long dirId) {
-        if (currentNode == null) {
+        private DefaultMutableTreeNode findCloudDirectoryNode(DefaultMutableTreeNode currentNode, Long dirId) {
+            if (currentNode == null) {
+                return null;
+            }
+    
+            Object userObject = currentNode.getUserObject();
+            if (userObject instanceof DirTreeResponse) {
+                DirTreeResponse dir = (DirTreeResponse) userObject;
+                if (dir.getId().equals(dirId)) {
+                    return currentNode;
+                }
+            }
+    
+            // 递归查找子节点
+            for (int i = 0; i < currentNode.getChildCount(); i++) {
+                DefaultMutableTreeNode child = (DefaultMutableTreeNode) currentNode.getChildAt(i);
+                DefaultMutableTreeNode foundNode = findCloudDirectoryNode(child, dirId);
+                if (foundNode != null) {
+                    return foundNode;
+                }
+            }
             return null;
         }
-
-        Object userObject = currentNode.getUserObject();
-        if (userObject instanceof DirTreeResponse) {
-            DirTreeResponse dir = (DirTreeResponse) userObject;
-            if (dir.getId().equals(dirId)) {
-                return currentNode;
+    
+        public void updateCloudContentNode(ContentResponse updatedContent) {
+            if (updatedContent == null || updatedContent.getId() == null) {
+                return;
+            }
+            // 假设根节点是 cloudRootNode 的第一个子节点
+            DefaultMutableTreeNode apiRootNode = (DefaultMutableTreeNode) cloudRootNode.getFirstChild();
+            DefaultMutableTreeNode nodeToUpdate = findCloudContentNode(apiRootNode, updatedContent.getId());
+    
+            if (nodeToUpdate != null) {
+                ContentResponse oldContent = (ContentResponse) nodeToUpdate.getUserObject();
+                oldContent.setTitle(updatedContent.getTitle()); // 更新节点的用户对象
+                cloudTreeModel.nodeChanged(nodeToUpdate); // 通知模型节点已更改
+            } else {
+                loadCloudDirectory(); // 如果找不到，作为备用方案刷新整个树
             }
         }
-
-        // 递归查找子节点
-        for (int i = 0; i < currentNode.getChildCount(); i++) {
-            DefaultMutableTreeNode child = (DefaultMutableTreeNode) currentNode.getChildAt(i);
-            DefaultMutableTreeNode foundNode = findCloudDirectoryNode(child, dirId);
-            if (foundNode != null) {
-                return foundNode;
+    
+        private DefaultMutableTreeNode findCloudContentNode(DefaultMutableTreeNode currentNode, Long contentId) {
+            if (currentNode == null) {
+                return null;
             }
+    
+            Object userObject = currentNode.getUserObject();
+            if (userObject instanceof ContentResponse) {
+                if (((ContentResponse) userObject).getId().equals(contentId)) {
+                    return currentNode;
+                }
+            }
+    
+            // 在子节点中递归查找
+            for (int i = 0; i < currentNode.getChildCount(); i++) {
+                DefaultMutableTreeNode foundNode = findCloudContentNode((DefaultMutableTreeNode) currentNode.getChildAt(i), contentId);
+                if (foundNode != null) {
+                    return foundNode;
+                }
+            }
+            return null;
         }
-        return null;
-    }
-            }
-            
+    }            

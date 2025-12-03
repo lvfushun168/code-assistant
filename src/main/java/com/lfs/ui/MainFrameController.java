@@ -217,12 +217,40 @@ public class MainFrameController {
         mainFrame.openFileInTabReadOnly(file);
     }
 
-    public void onCloudFileSelected(String title, String content) {
-        mainFrame.openCloudFileInTab(title, content);
+    public void onCloudFileSelected(ContentResponse fileInfo, String content) {
+        mainFrame.openCloudFileInTab(fileInfo, content);
     }
 
     public void onNewCloudFileRequested(Long dirId, String title) {
         mainFrame.openNewCloudFileInTab(dirId, title);
+    }
+
+    public void renameCloudFile(Long contentId, Long dirId, String newTitle) {
+        mainFrame.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+        new SwingWorker<ContentResponse, Void>() {
+            @Override
+            protected ContentResponse doInBackground() throws Exception {
+                // 内容传null，因为只重命名，不更新内容
+                return contentService.updateContent(contentId, dirId, newTitle, null);
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    ContentResponse response = get();
+                    if (response != null) {
+                        NotificationUtil.showSuccessDialog(mainFrame, "重命名成功！");
+                        // 局部刷新节点
+                        mainFrame.getFileExplorerPanel().updateCloudContentNode(response);
+                    }
+                } catch (Exception e) {
+                    NotificationUtil.showErrorDialog(mainFrame, "重命名失败: " + e.getMessage());
+                    e.printStackTrace();
+                } finally {
+                    mainFrame.setCursor(Cursor.getDefaultCursor());
+                }
+            }
+        }.execute();
     }
 
     public void saveCloudFile() {
@@ -269,10 +297,43 @@ public class MainFrameController {
                     }
                 }
             }.execute();
+        } else {
+            // 这是更新现有云文件的逻辑
+            Long contentId = activeEditorPanel.getCloudContentId();
+            Long dirId = activeEditorPanel.getCloudDirId();
+            String title = activeEditorPanel.getCloudTitle();
+            String content = activeEditorPanel.getTextAreaContent();
+
+            if (contentId == null) {
+                NotificationUtil.showErrorDialog(mainFrame, "无法保存文件，文档ID丢失。");
+                return;
+            }
+
+            mainFrame.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+
+            new SwingWorker<ContentResponse, Void>() {
+                @Override
+                protected ContentResponse doInBackground() {
+                    return contentService.updateContent(contentId, dirId, title, content);
+                }
+
+                @Override
+                protected void done() {
+                    try {
+                        ContentResponse response = get();
+                        if (response != null) {
+                            NotificationUtil.showSaveSuccess(mainFrame);
+                            // 由于只是内容更新，UI上暂时不需要做额外刷新
+                        }
+                    } catch (Exception e) {
+                        NotificationUtil.showErrorDialog(mainFrame, "更新云文件失败: " + e.getMessage());
+                        e.printStackTrace();
+                    } finally {
+                        mainFrame.setCursor(Cursor.getDefaultCursor());
+                    }
+                }
+            }.execute();
         }
-        // else {
-        // TODO: 在这里处理更新现有云文件的逻辑
-        // }
     }
 
 

@@ -110,4 +110,59 @@ public class ContentService {
             return null;
         }
     }
+
+    /**
+     * 更新文档
+     * @param id 文档ID
+     * @param dirId 目录ID
+     * @param title 文档标题
+     * @param content 文档内容 (可选, 为null则不更新)
+     * @return 更新成功后的文档信息
+     */
+    public ContentResponse updateContent(Long id, Long dirId, String title, String content) {
+        String url = AppConfig.BASE_URL + AppConfig.CONTENT_URL;
+
+        try {
+            // 1. 构建meta部分
+            Map<String, Object> meta = new HashMap<>();
+            meta.put("id", id);
+            meta.put("dirId", dirId);
+            meta.put("title", title);
+            String metaJson = JSONUtil.toJsonStr(meta);
+            byte[] metaBytes = metaJson.getBytes(StandardCharsets.UTF_8);
+            BytesResource metaResource = new BytesResource(metaBytes, "meta.json");
+
+            var request = HttpClientService.createPutRequest(url, true)
+                    .form("meta", metaResource);
+
+            // 2. 如果有内容，则构建文件部分
+            if (content != null) {
+                byte[] contentBytes = content.getBytes(StandardCharsets.UTF_8);
+                BytesResource fileResource = new BytesResource(contentBytes, title + ".txt");
+                request.form("file", fileResource);
+            }
+
+            // 3. 发送multipart/form-data请求
+            HttpResponse response = request.execute();
+
+            String body = response.body();
+            ApiResponse apiResponse = JSONUtil.toBean(body, ApiResponse.class);
+
+            if (apiResponse.isSuccess()) {
+                // 更新操作成功后，返回一个包含更新后信息的新对象，以便UI刷新
+                ContentResponse updatedContent = new ContentResponse();
+                updatedContent.setId(id);
+                updatedContent.setDirId(dirId);
+                updatedContent.setTitle(title);
+                return updatedContent;
+            } else {
+                NotificationUtil.showErrorDialog(null, "更新文件失败: " + apiResponse.getMessage());
+                return null;
+            }
+        } catch (Exception e) {
+            NotificationUtil.showErrorDialog(null, "更新文件时发生异常: " + e.getMessage());
+            e.printStackTrace();
+            return null;
+        }
+    }
 }
