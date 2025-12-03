@@ -392,6 +392,20 @@ public class MainFrame extends JFrame {
         addTab(title, newEditorPanel);
     }
 
+    public void openNewCloudFileInTab(Long dirId, String title) {
+        // 创建一个新的 EditorPanel 用于未保存的云文件
+        EditorPanel newEditorPanel = new EditorPanel(controller, preferencesService);
+        newEditorPanel.setCloudFile(true);
+        newEditorPanel.setNewCloudFile(true);
+        newEditorPanel.setCloudDirId(dirId);
+        newEditorPanel.setCloudTitle(title);
+        // 默认为纯文本
+        newEditorPanel.setSyntaxStyle("txt");
+
+        // 添加到 tabbedPane
+        addTab(title, newEditorPanel);
+    }
+
     public void openFile(File file) {
         if (file != null && file.exists() && file.isFile()) {
             controller.onFileSelected(file);

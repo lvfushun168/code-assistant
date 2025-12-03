@@ -19,6 +19,13 @@ public class EditorPanel extends JPanel {
     private File currentFile;
     // RSyntaxTextArea 有自己的撤销管理器，所以我们不需要一个单独的。
 
+    // 云文件相关状态
+    private boolean isCloudFile = false;
+    private boolean isNewCloudFile = false; // 标记是否为尚未保存的新建云文件
+    private Long cloudContentId;
+    private Long cloudDirId;
+    private String cloudTitle;
+
     public EditorPanel(MainFrameController controller, UserPreferencesService preferencesService) {
         super(new BorderLayout());
         this.controller = controller;
@@ -28,6 +35,46 @@ public class EditorPanel extends JPanel {
         setupSaveShortcut();
         setupFindShortcut();
         // 撤销/重做由 RSyntaxTextArea 默认处理
+    }
+
+    public boolean isCloudFile() {
+        return isCloudFile;
+    }
+
+    public void setCloudFile(boolean cloudFile) {
+        isCloudFile = cloudFile;
+    }
+
+    public boolean isNewCloudFile() {
+        return isNewCloudFile;
+    }
+
+    public void setNewCloudFile(boolean newCloudFile) {
+        isNewCloudFile = newCloudFile;
+    }
+
+    public Long getCloudContentId() {
+        return cloudContentId;
+    }
+
+    public void setCloudContentId(Long cloudContentId) {
+        this.cloudContentId = cloudContentId;
+    }
+
+    public Long getCloudDirId() {
+        return cloudDirId;
+    }
+
+    public void setCloudDirId(Long cloudDirId) {
+        this.cloudDirId = cloudDirId;
+    }
+
+    public String getCloudTitle() {
+        return cloudTitle;
+    }
+
+    public void setCloudTitle(String cloudTitle) {
+        this.cloudTitle = cloudTitle;
     }
 
     private FindReplaceDialog findReplaceDialog;
@@ -91,7 +138,13 @@ public class EditorPanel extends JPanel {
         actionMap.put(saveActionKey, new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                controller.saveCurrentFile();
+                if (isCloudFile) {
+                    // 如果是云文件，调用云文件保存逻辑
+                    controller.saveCloudFile();
+                } else {
+                    // 否则，调用本地文件保存逻辑
+                    controller.saveCurrentFile();
+                }
             }
         });
     }

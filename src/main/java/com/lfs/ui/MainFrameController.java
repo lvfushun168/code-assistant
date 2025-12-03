@@ -1,6 +1,8 @@
 package com.lfs.ui;
 
+import com.lfs.domain.ContentResponse;
 import com.lfs.service.ClipboardService;
+import com.lfs.service.ContentService;
 import com.lfs.service.FileProcessorService;
 import com.lfs.service.UserPreferencesService;
 import com.lfs.util.NotificationUtil;
@@ -16,16 +18,19 @@ public class MainFrameController {
 
     private final FileProcessorService fileProcessorService;
     private final UserPreferencesService preferencesService;
+    private final ContentService contentService;
     private final MainFrame mainFrame;
 
     public MainFrameController(MainFrame mainFrame) {
         this.mainFrame = mainFrame;
         this.fileProcessorService = new FileProcessorService();
         this.preferencesService = new UserPreferencesService();
+        this.contentService = new ContentService();
     }
 
     /**
      * 处理“获取内容”和“获取结构”按钮点击的逻辑。
+     *
      * @param isContentMode 获取内容时为true，获取结构时为false。
      */
     public void onProcessDirectory(boolean isContentMode) {
@@ -107,7 +112,7 @@ public class MainFrameController {
     }
 
     public void onSaveAs() {
-        EditorPanel activeEditorPanel = (EditorPanel)mainFrame.getActiveEditorPanel();
+        EditorPanel activeEditorPanel = (EditorPanel) mainFrame.getActiveEditorPanel();
         if (activeEditorPanel == null) {
             NotificationUtil.showErrorDialog(mainFrame, "没有活动的编辑器,无法保存!");
             return;
@@ -152,6 +157,7 @@ public class MainFrameController {
 
     /**
      * 创建并配置一个JFileChooser实例。
+     *
      * @param dialogTitle 对话框标题
      * @return 配置好的 JFileChooser 实例
      */
@@ -214,6 +220,61 @@ public class MainFrameController {
     public void onCloudFileSelected(String title, String content) {
         mainFrame.openCloudFileInTab(title, content);
     }
+
+    public void onNewCloudFileRequested(Long dirId, String title) {
+        mainFrame.openNewCloudFileInTab(dirId, title);
+    }
+
+    public void saveCloudFile() {
+        Component activeComponent = mainFrame.getActiveEditorPanel();
+        if (!(activeComponent instanceof EditorPanel)) {
+            return; // Not a standard editor panel that supports this
+        }
+        EditorPanel activeEditorPanel = (EditorPanel) activeComponent;
+
+        if (activeEditorPanel.isNewCloudFile()) {
+            Long dirId = activeEditorPanel.getCloudDirId();
+            String title = activeEditorPanel.getCloudTitle();
+            String content = activeEditorPanel.getTextAreaContent();
+
+            if (title == null || dirId == null) {
+                NotificationUtil.showErrorDialog(mainFrame, "无法保存新文件，缺少目录或标题信息。");
+                return;
+            }
+
+            mainFrame.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+
+            new SwingWorker<ContentResponse, Void>() {
+                @Override
+                protected ContentResponse doInBackground() {
+                    return contentService.createContent(dirId, title, content);
+                }
+
+                @Override
+                protected void done() {
+                    try {
+                        ContentResponse response = get();
+                        if (response != null) {
+                            activeEditorPanel.setNewCloudFile(false);
+                            activeEditorPanel.setCloudContentId(response.getId());
+                            NotificationUtil.showSaveSuccess(mainFrame);
+                            // 局部刷新云目录，添加新节点
+                            mainFrame.getFileExplorerPanel().addCloudContentNode(response);
+                        }
+                    } catch (Exception e) {
+                        NotificationUtil.showErrorDialog(mainFrame, "保存云文件失败: " + e.getMessage());
+                        e.printStackTrace();
+                    } finally {
+                        mainFrame.setCursor(Cursor.getDefaultCursor());
+                    }
+                }
+            }.execute();
+        }
+        // else {
+        // TODO: 在这里处理更新现有云文件的逻辑
+        // }
+    }
+
 
     public void saveCurrentFile() {
         Component activeComponent = mainFrame.getActiveEditorPanel();

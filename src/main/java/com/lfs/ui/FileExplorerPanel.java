@@ -736,6 +736,10 @@ public class FileExplorerPanel extends JPanel {
                             private JPopupMenu createCloudBackgroundPopupMenu() {
             
                                 JPopupMenu popupMenu = new JPopupMenu();
+
+                                JMenuItem newFileItem = new JMenuItem("新建文档");
+                                newFileItem.addActionListener(e -> handleNewCloudFile(cloudApiRoot != null ? cloudApiRoot.getId() : null));
+                                popupMenu.add(newFileItem);
             
                                 JMenuItem newDirItem = new JMenuItem("新建目录");
             
@@ -826,6 +830,10 @@ public class FileExplorerPanel extends JPanel {
                                 JPopupMenu popupMenu = new JPopupMenu();
             
                                 DirTreeResponse dir = (DirTreeResponse) node.getUserObject();
+
+                                JMenuItem newFileItem = new JMenuItem("新建文档");
+                                newFileItem.addActionListener(e -> handleNewCloudFile(dir.getId()));
+                                popupMenu.add(newFileItem);
             
                         
             
@@ -1028,5 +1036,70 @@ public class FileExplorerPanel extends JPanel {
                                 return popupMenu;
             
                             }
+
+    private void handleNewCloudFile(Long dirId) {
+        if (dirId == null) {
+            NotificationUtil.showErrorDialog(this, "无法确定父目录，无法创建文件。");
+            return;
+        }
+        String title = JOptionPane.showInputDialog(this, "请输入新文档名称 (无需扩展名):", "新建云端文档", JOptionPane.PLAIN_MESSAGE);
+        if (title != null && !title.trim().isEmpty()) {
+            controller.onNewCloudFileRequested(dirId, title.trim());
+        }
+    }
+
+    /**
+     * 向云文件树中添加新的文档节点
+     * @param newContent 新创建的文档信息
+     */
+    public void addCloudContentNode(ContentResponse newContent) {
+        if (newContent == null || newContent.getDirId() == null) {
+            return; // 无效内容或无法确定父目录
+        }
+
+        // 遍历云文件树，查找父目录节点
+        // 这里需要注意，cloudRootNode的第一个子节点才是真正的API返回的根目录
+        DefaultMutableTreeNode apiRootNode = (DefaultMutableTreeNode) cloudRootNode.getFirstChild();
+        DefaultMutableTreeNode parentNode = findCloudDirectoryNode(apiRootNode, newContent.getDirId());
+
+        if (parentNode != null) {
+            DefaultMutableTreeNode newNode = new DefaultMutableTreeNode(newContent);
+            // 将新节点插入到父节点中
+            cloudTreeModel.insertNodeInto(newNode, parentNode, parentNode.getChildCount());
+            // 确保新节点可见
+            cloudFileTree.scrollPathToVisible(new TreePath(newNode.getPath()));
+        } else {
+            // 如果找不到父目录，可能需要刷新整个树或者提示用户
+            // 为了确保一致性，这里选择刷新整个树作为备用方案
+            loadCloudDirectory();
+        }
+    }
+
+    /**
+     * 递归查找指定ID的云目录节点
+     */
+    private DefaultMutableTreeNode findCloudDirectoryNode(DefaultMutableTreeNode currentNode, Long dirId) {
+        if (currentNode == null) {
+            return null;
+        }
+
+        Object userObject = currentNode.getUserObject();
+        if (userObject instanceof DirTreeResponse) {
+            DirTreeResponse dir = (DirTreeResponse) userObject;
+            if (dir.getId().equals(dirId)) {
+                return currentNode;
+            }
+        }
+
+        // 递归查找子节点
+        for (int i = 0; i < currentNode.getChildCount(); i++) {
+            DefaultMutableTreeNode child = (DefaultMutableTreeNode) currentNode.getChildAt(i);
+            DefaultMutableTreeNode foundNode = findCloudDirectoryNode(child, dirId);
+            if (foundNode != null) {
+                return foundNode;
+            }
+        }
+        return null;
+    }
             }
             

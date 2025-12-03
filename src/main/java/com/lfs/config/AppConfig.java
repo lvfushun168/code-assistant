@@ -66,6 +66,11 @@ public class AppConfig {
     public static final String CONTENT_DOWNLOAD_URL = API_PREFIX + "/content/download";
 
     /**
+     * 内容
+     */
+    public static final String CONTENT_URL = API_PREFIX + "/content";
+
+    /**
      * 允许应用程序读取的文件扩展名
      */
     public static final Set<String> ALLOWED_EXTENSIONS = new HashSet<>(Arrays.asList(
