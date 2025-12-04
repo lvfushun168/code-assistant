@@ -930,7 +930,7 @@ public class FileExplorerPanel extends JPanel {
             NotificationUtil.showErrorDialog(this, "无法确定父目录，无法创建文件。");
             return;
         }
-        String title = JOptionPane.showInputDialog(this, "请输入新文档名称 (无需扩展名):", "新建云端文档", JOptionPane.PLAIN_MESSAGE);
+        String title = JOptionPane.showInputDialog(this, "请输入新文档名称", "新建云端文档", JOptionPane.PLAIN_MESSAGE);
         if (title != null && !title.trim().isEmpty()) {
             controller.createAndOpenCloudFile(dirId, title.trim());
         }
