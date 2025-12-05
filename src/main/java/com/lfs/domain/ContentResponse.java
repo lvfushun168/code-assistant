@@ -30,4 +30,9 @@ public class ContentResponse implements Serializable {
      * 文档标题
      */
     private String title;
+
+    /**
+     * 文档类型（txt,json,java,yml等等）
+     */
+    private String type;
 }
