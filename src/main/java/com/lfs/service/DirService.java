@@ -41,7 +41,11 @@ public class DirService {
                 return null;
             }
         } catch (Exception e) {
-            NotificationUtil.showErrorDialog(null, "请求云端目录时发生异常: " + e.getMessage());
+            String message = e.getMessage();
+            if (e.getMessage().contains("SSLHandshakeException")) {
+                message = "服务器连接失败，请关闭代理或检查网络";
+            }
+            NotificationUtil.showErrorDialog(null, message);
             e.printStackTrace();
             return null;
         }
