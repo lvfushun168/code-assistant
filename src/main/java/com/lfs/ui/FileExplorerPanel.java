@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Enumeration;
 import java.util.List;
 
 public class FileExplorerPanel extends JPanel {
@@ -103,11 +104,12 @@ public class FileExplorerPanel extends JPanel {
 
         // --- Cloud Panel ---
         cloudPanel = new JPanel(new BorderLayout());
+        // 根节点，不显示，只作为容器
         cloudRootNode = new DefaultMutableTreeNode("云端文件");
         cloudTreeModel = new DefaultTreeModel(cloudRootNode);
         cloudFileTree = new JTree(cloudTreeModel);
         cloudFileTree.setCellRenderer(new CloudFileTreeCellRenderer());
-        cloudFileTree.setRootVisible(false);
+        cloudFileTree.setRootVisible(false); // 隐藏根节点
         cloudFileTree.setShowsRootHandles(true);
         cloudFileTree.setDragEnabled(true);
         cloudFileTree.setTransferHandler(new CloudTreeTransferHandler(this.controller));
@@ -946,46 +948,47 @@ public class FileExplorerPanel extends JPanel {
             return; // 无效内容或无法确定父目录
         }
 
-        // 遍历云文件树，查找父目录节点
-        // 这里需要注意，cloudRootNode的第一个子节点才是真正的API返回的根目录
         DefaultMutableTreeNode apiRootNode = (DefaultMutableTreeNode) cloudRootNode.getFirstChild();
-        DefaultMutableTreeNode parentNode = findCloudDirectoryNode(apiRootNode, newContent.getDirId());
+        DefaultMutableTreeNode parentNode = findNodeById(newContent.getDirId());
 
         if (parentNode != null) {
             DefaultMutableTreeNode newNode = new DefaultMutableTreeNode(newContent);
-            // 将新节点插入到父节点中
             cloudTreeModel.insertNodeInto(newNode, parentNode, parentNode.getChildCount());
-            // 确保新节点可见
             cloudFileTree.scrollPathToVisible(new TreePath(newNode.getPath()));
         } else {
-            // 如果找不到父目录，可能需要刷新整个树或者提示用户
-            // 为了确保一致性，这里选择刷新整个树作为备用方案
             loadCloudDirectory();
         }
     }
 
+    // 辅助方法：忽略类型的ID比较（容错性极强）
+    private boolean isIdMatch(Long id1, Object id2Obj) {
+        if (id1 == null || id2Obj == null) return false;
+        String s1 = String.valueOf(id1);
+        String s2 = String.valueOf(id2Obj);
+        // 移除可能的小数点（JSON number sometimes becomes double）
+        if (s1.endsWith(".0")) s1 = s1.substring(0, s1.length() - 2);
+        if (s2.endsWith(".0")) s2 = s2.substring(0, s2.length() - 2);
+        return s1.equals(s2);
+    }
+
     /**
-     * 递归查找指定ID的云目录节点
+     * 强健壮性的节点查找：BFS遍历全树，不依赖层级假设，支持模糊类型匹配
      */
-    private DefaultMutableTreeNode findCloudDirectoryNode(DefaultMutableTreeNode currentNode, Long dirId) {
-        if (currentNode == null) {
-            return null;
-        }
+    private DefaultMutableTreeNode findNodeById(Long id) {
+        if (id == null) return null;
 
-        Object userObject = currentNode.getUserObject();
-        if (userObject instanceof DirTreeResponse) {
-            DirTreeResponse dir = (DirTreeResponse) userObject;
-            if (dir.getId().equals(dirId)) {
-                return currentNode;
-            }
-        }
-
-        // 递归查找子节点
-        for (int i = 0; i < currentNode.getChildCount(); i++) {
-            DefaultMutableTreeNode child = (DefaultMutableTreeNode) currentNode.getChildAt(i);
-            DefaultMutableTreeNode foundNode = findCloudDirectoryNode(child, dirId);
-            if (foundNode != null) {
-                return foundNode;
+        Enumeration e = cloudRootNode.breadthFirstEnumeration();
+        while (e.hasMoreElements()) {
+            DefaultMutableTreeNode node = (DefaultMutableTreeNode) e.nextElement();
+            Object uo = node.getUserObject();
+            if (uo instanceof DirTreeResponse) {
+                if (isIdMatch(id, ((DirTreeResponse) uo).getId())) {
+                    return node;
+                }
+            } else if (uo instanceof ContentResponse) {
+                if (isIdMatch(id, ((ContentResponse) uo).getId())) {
+                    return node;
+                }
             }
         }
         return null;
@@ -995,95 +998,102 @@ public class FileExplorerPanel extends JPanel {
         if (updatedContent == null || updatedContent.getId() == null) {
             return;
         }
-        // 假设根节点是 cloudRootNode 的第一个子节点
-        DefaultMutableTreeNode apiRootNode = (DefaultMutableTreeNode) cloudRootNode.getFirstChild();
-        DefaultMutableTreeNode nodeToUpdate = findCloudContentNode(apiRootNode, updatedContent.getId());
+        DefaultMutableTreeNode nodeToUpdate = findNodeById(updatedContent.getId());
 
         if (nodeToUpdate != null) {
             ContentResponse oldContent = (ContentResponse) nodeToUpdate.getUserObject();
-            oldContent.setTitle(updatedContent.getTitle()); // 更新节点的用户对象
-            cloudTreeModel.nodeChanged(nodeToUpdate); // 通知模型节点已更改
+            oldContent.setTitle(updatedContent.getTitle());
+            cloudTreeModel.nodeChanged(nodeToUpdate);
         } else {
-            loadCloudDirectory(); // 如果找不到，作为备用方案刷新整个树
+            loadCloudDirectory();
         }
-    }
-
-    private DefaultMutableTreeNode findCloudContentNode(DefaultMutableTreeNode currentNode, Long contentId) {
-        if (currentNode == null) {
-            return null;
-        }
-
-        Object userObject = currentNode.getUserObject();
-        if (userObject instanceof ContentResponse) {
-            if (((ContentResponse) userObject).getId().equals(contentId)) {
-                return currentNode;
-            }
-        }
-
-        // 在子节点中递归查找
-        for (int i = 0; i < currentNode.getChildCount(); i++) {
-            DefaultMutableTreeNode foundNode = findCloudContentNode((DefaultMutableTreeNode) currentNode.getChildAt(i), contentId);
-            if (foundNode != null) {
-                return foundNode;
-            }
-        }
-        return null;
     }
 
     public void removeCloudContentNode(Long contentId) {
         if (contentId == null) {
             return;
         }
-        DefaultMutableTreeNode apiRootNode = (DefaultMutableTreeNode) cloudRootNode.getFirstChild();
-        DefaultMutableTreeNode nodeToRemove = findCloudContentNode(apiRootNode, contentId);
+        DefaultMutableTreeNode nodeToRemove = findNodeById(contentId);
 
         if (nodeToRemove != null) {
             cloudTreeModel.removeNodeFromParent(nodeToRemove);
         } else {
-            // 如果找不到，可能已经被删了，或者树状态不一致，刷新整个树
             loadCloudDirectory();
         }
     }
 
     /**
      * 局部移动节点
-     * 根据 ID 去查找 TreeModel 中真正的节点，而不是操作可能被序列化反序列化过的副本。
-     *
-     * @param nodeToMoveStub    被拖拽的节点存根（可能是反序列化的副本）
-     * @param newParentNode     目标父节点
-     * @param updatedUserObject 包含了更新后ID（dirId/parentId）的新业务对象
      */
-    public void moveCloudNodeLocal(DefaultMutableTreeNode nodeToMoveStub, DefaultMutableTreeNode newParentNode, Object updatedUserObject) {
-        // 在树模型中查找真正的“活体”节点，避免操作副本导致的残留问题
-        DefaultMutableTreeNode liveNode = null;
-        Object userObj = nodeToMoveStub.getUserObject();
+    public void moveCloudNodeLocal(DefaultMutableTreeNode nodeToMoveStub, DefaultMutableTreeNode newParentStub, Object updatedUserObject) {
+        SwingUtilities.invokeLater(() -> {
+            try {
+                if (cloudRootNode.getChildCount() == 0) return;
 
-        // 假设根节点是 cloudRootNode 的第一个子节点
-        if (cloudRootNode.getChildCount() == 0) return;
-        DefaultMutableTreeNode apiRootNode = (DefaultMutableTreeNode) cloudRootNode.getFirstChild();
+                // 1. 获取源节点 ID
+                Long moveId = null;
+                Object stubObj = nodeToMoveStub.getUserObject();
+                if (stubObj instanceof ContentResponse) moveId = ((ContentResponse)stubObj).getId();
+                else if (stubObj instanceof DirTreeResponse) moveId = ((DirTreeResponse)stubObj).getId();
 
-        if (userObj instanceof ContentResponse) {
-            Long id = ((ContentResponse) userObj).getId();
-            liveNode = findCloudContentNode(apiRootNode, id);
-        } else if (userObj instanceof DirTreeResponse) {
-            Long id = ((DirTreeResponse) userObj).getId();
-            liveNode = findCloudDirectoryNode(apiRootNode, id);
-        }
+                // 2. 查找【真实的源节点】
+                DefaultMutableTreeNode liveOldNode = findNodeById(moveId);
 
-        if (liveNode == null) {
-            System.out.println("局部移动失败：在当前树中找不到该节点。回退到全局刷新。");
-            loadCloudDirectory();
-            return;
-        }
+                // 3. 查找【真实的目标父节点】
+                DefaultMutableTreeNode liveNewParent = null;
+                Object parentObj = newParentStub.getUserObject();
 
-        cloudTreeModel.removeNodeFromParent(liveNode);
+                // 特殊处理：如果目标是根节点容器或者 API 根节点
+                // 如果用户拖拽到 JTree 的空白区域或根节点，DropLocation 会指向 Root
+                if (newParentStub == cloudRootNode ||
+                        (cloudRootNode.getFirstChild() != null && newParentStub == cloudRootNode.getFirstChild())) {
+                    liveNewParent = (DefaultMutableTreeNode) cloudRootNode.getFirstChild();
+                } else if (parentObj instanceof DirTreeResponse) {
+                    Long parentId = ((DirTreeResponse) parentObj).getId();
+                    liveNewParent = findNodeById(parentId);
+                }
 
-        liveNode.setUserObject(updatedUserObject);
+                // 4. 验证查找结果
+                if (liveOldNode == null) {
+                    NotificationUtil.showErrorDialog(this, "局部更新失败：无法在树中找到被移动的节点 (ID=" + moveId + ")");
+                    loadCloudDirectory();
+                    return;
+                }
+                if (liveNewParent == null) {
+                    NotificationUtil.showErrorDialog(this, "局部更新失败：无法在树中找到目标目录");
+                    loadCloudDirectory();
+                    return;
+                }
 
-        cloudTreeModel.insertNodeInto(liveNode, newParentNode, newParentNode.getChildCount());
+                // 5. 环路检测 (不能把父节点拖到子节点里)
+                if (liveOldNode == liveNewParent || liveOldNode.isNodeDescendant(liveNewParent)) {
+                    return;
+                }
 
-        TreePath newPath = new TreePath(liveNode.getPath());
-        cloudFileTree.scrollPathToVisible(newPath);
-        cloudFileTree.setSelectionPath(newPath);
+                // 6. 执行原子化模型操作
+                // 直接移动 liveOldNode，这样它的 children 会自动跟随，不需要手动搬运
+                cloudTreeModel.removeNodeFromParent(liveOldNode);
+
+                // 更新 UserObject (后端返回了新的 DirTreeResponse，含新 parentId)
+                liveOldNode.setUserObject(updatedUserObject);
+
+                // 插入到新位置
+                cloudTreeModel.insertNodeInto(liveOldNode, liveNewParent, liveNewParent.getChildCount());
+
+                // 7. reload 无参调用会通知整个 Tree 的结构发生了变化
+                cloudTreeModel.reload();
+
+                // 8. 恢复选中并滚动到可视区域
+                // reload 后路径对象失效，需重新构建
+                TreePath newPath = new TreePath(cloudTreeModel.getPathToRoot(liveOldNode));
+                cloudFileTree.scrollPathToVisible(newPath);
+                cloudFileTree.setSelectionPath(newPath);
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                NotificationUtil.showErrorDialog(this, "局部更新发生异常: " + e.getMessage());
+                loadCloudDirectory(); // 终极兜底
+            }
+        });
     }
 }

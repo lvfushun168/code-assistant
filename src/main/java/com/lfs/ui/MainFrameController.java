@@ -317,17 +317,30 @@ public class MainFrameController {
 
         mainFrame.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 
-        // 修改SwingWorker的返回类型为Object，以便携带回更新后的对象
         new SwingWorker<Object, Void>() {
             @Override
             protected Object doInBackground() throws Exception {
                 if (draggedObject instanceof ContentResponse) {
                     ContentResponse content = (ContentResponse) draggedObject;
-                    // 内容传null，因为只移动，不更新内容
-                    return contentService.updateContent(content.getId(), targetDirId, content.getTitle(), null);
+                    contentService.updateContent(content.getId(), targetDirId, content.getTitle(), null);
+                    // 手动构造更新后的对象
+                    ContentResponse updated = new ContentResponse();
+                    updated.setId(content.getId());
+                    updated.setTitle(content.getTitle());
+                    updated.setDirId(targetDirId); // 关键：更新父ID
+                    return updated;
                 } else if (draggedObject instanceof DirTreeResponse) {
                     DirTreeResponse dir = (DirTreeResponse) draggedObject;
-                    return dirService.updateDir(dir.getId(), targetDirId, dir.getName());
+                    dirService.updateDir(dir.getId(), targetDirId, dir.getName());
+                    // 手动构造更新后的对象
+                    DirTreeResponse updated = new DirTreeResponse();
+                    updated.setId(dir.getId());
+                    updated.setName(dir.getName());
+                    updated.setParentId(targetDirId); // 关键：更新父ID
+                    // 子节点列表暂时设为null或保留原样，由 Panel 的逻辑处理子节点搬运
+                    updated.setChildren(dir.getChildren());
+                    updated.setContents(dir.getContents());
+                    return updated;
                 }
                 return null;
             }
@@ -335,12 +348,13 @@ public class MainFrameController {
             @Override
             protected void done() {
                 try {
-                    // 获取后端返回的更新后的对象（包含了新的parentId或dirId）
                     Object updatedObject = get();
                     if (updatedObject != null) {
                         NotificationUtil.showToast(mainFrame, "移动成功！");
-                        // 关键修改：调用 FileExplorerPanel 的局部更新方法，而不是全局重新加载
+                        // 调用 Panel 的局部更新
                         mainFrame.getFileExplorerPanel().moveCloudNodeLocal(nodeToMove, targetNode, updatedObject);
+                    } else {
+                        NotificationUtil.showErrorDialog(mainFrame, "移动失败：无法构造更新对象。");
                     }
                 } catch (Exception e) {
                     NotificationUtil.showErrorDialog(mainFrame, "移动操作失败: " + e.getMessage());
@@ -355,7 +369,7 @@ public class MainFrameController {
     public void saveCloudFile() {
         Component activeComponent = mainFrame.getActiveEditorPanel();
         if (!(activeComponent instanceof EditorPanel)) {
-            return; // Not a standard editor panel that supports this
+            return;
         }
         EditorPanel activeEditorPanel = (EditorPanel) activeComponent;
 
