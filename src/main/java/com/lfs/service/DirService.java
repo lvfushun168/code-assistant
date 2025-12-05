@@ -91,7 +91,7 @@ public class DirService {
             BackendResponse<Long> apiResponse = JSONUtil.toBean(response.body(), typeRef, false);
 
             if (apiResponse.getCode() != 200) {
-                NotificationUtil.showErrorDialog(null, "更新失败: " + apiResponse.getMessage());
+                NotificationUtil.showErrorDialog(null, apiResponse.getMessage());
                 return null;
             }
             return apiResponse.getData();
