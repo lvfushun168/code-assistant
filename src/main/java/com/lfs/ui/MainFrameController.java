@@ -95,7 +95,7 @@ public class MainFrameController {
                             // 用户选择不保存文件，则复制到剪贴板
                             ClipboardService.copyToClipboard(processedResult);
                             String successMessage = isContentMode ? "内容已粘贴到剪切板" : "项目结构已粘贴到剪切板";
-                            NotificationUtil.showSuccessDialog(mainFrame, successMessage);
+                            NotificationUtil.showToast(mainFrame, successMessage);
                             mainFrame.setCursor(Cursor.getDefaultCursor());
                         }
                     });
