@@ -327,7 +327,7 @@ public class MainFrameController {
             protected void done() {
                 try {
                     if (get()) {
-                        NotificationUtil.showSuccessDialog(mainFrame, "删除成功！");
+                        NotificationUtil.showToast(mainFrame, "删除成功");
                         mainFrame.getFileExplorerPanel().removeCloudContentNode(contentId);
                     }
                 } catch (Exception e) {
