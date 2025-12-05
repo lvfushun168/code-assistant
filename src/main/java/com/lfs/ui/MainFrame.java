@@ -397,6 +397,10 @@ public class MainFrame extends JFrame {
         newEditorPanel.setCloudDirId(fileInfo.getDirId());
         newEditorPanel.setCloudTitle(fileInfo.getTitle());
 
+        // 根据后端返回的类型设置语法高亮
+        if (fileInfo.getType() != null && !fileInfo.getType().isEmpty()) {
+            newEditorPanel.setSyntaxStyle(fileInfo.getType());
+        }
 
         // 添加到 tabbedPane
         addTab(fileInfo.getTitle(), newEditorPanel);

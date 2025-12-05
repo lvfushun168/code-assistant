@@ -227,8 +227,8 @@ public class MainFrameController {
         new SwingWorker<ContentResponse, Void>() {
             @Override
             protected ContentResponse doInBackground() throws Exception {
-                // 立即创建一个内容为空的文档
-                return contentService.createContent(dirId, title, "");
+                // 立即创建一个内容为空的文档, 默认为 txt 类型
+                return contentService.createContent(dirId, title, "", "txt");
             }
 
             @Override
@@ -257,8 +257,8 @@ public class MainFrameController {
         new SwingWorker<ContentResponse, Void>() {
             @Override
             protected ContentResponse doInBackground() throws Exception {
-                // 内容传null，因为只重命名，不更新内容
-                return contentService.updateContent(contentId, dirId, newTitle, null);
+                // 内容和类型传null，因为只重命名，不更新这些
+                return contentService.updateContent(contentId, dirId, newTitle, null, null);
             }
 
             @Override
@@ -357,12 +357,18 @@ public class MainFrameController {
             protected Object doInBackground() throws Exception {
                 if (draggedObject instanceof ContentResponse) {
                     ContentResponse content = (ContentResponse) draggedObject;
-                    contentService.updateContent(content.getId(), targetDirId, content.getTitle(), null);
+                    // 移动文件时，不改变内容和类型，所以传 null
+                    ContentResponse contentResponse = contentService.updateContent(content.getId(), targetDirId, content.getTitle(), null, null);
+                    if (contentResponse == null) {
+                        return null;
+                    }
                     // 手动构造更新后的对象
                     ContentResponse updated = new ContentResponse();
                     updated.setId(content.getId());
                     updated.setTitle(content.getTitle());
                     updated.setDirId(targetDirId);
+                    // 保持原有的类型
+                    updated.setType(content.getType());
                     return updated;
 
                 } else if (draggedObject instanceof DirTreeResponse) {
@@ -391,7 +397,7 @@ public class MainFrameController {
                         NotificationUtil.showToast(mainFrame, "移动成功！");
                         mainFrame.getFileExplorerPanel().moveCloudNodeLocal(nodeToMove, targetNode, updatedObject);
                     } else {
-                        NotificationUtil.showErrorDialog(mainFrame, "移动失败：无法构造更新对象。");
+                        NotificationUtil.showToast(mainFrame, "移动失败");
                     }
                 } catch (Exception e) {
                     NotificationUtil.showErrorDialog(mainFrame, "移动操作失败: " + e.getMessage());
@@ -415,6 +421,7 @@ public class MainFrameController {
         Long dirId = activeEditorPanel.getCloudDirId();
         String title = activeEditorPanel.getCloudTitle();
         String content = activeEditorPanel.getTextAreaContent();
+        String type = activeEditorPanel.getCurrentSyntax(); // 获取当前语法类型
 
         if (contentId == null) {
             NotificationUtil.showErrorDialog(mainFrame, "无法保存文件，文档ID丢失。");
@@ -426,7 +433,7 @@ public class MainFrameController {
         new SwingWorker<ContentResponse, Void>() {
             @Override
             protected ContentResponse doInBackground() {
-                return contentService.updateContent(contentId, dirId, title, content);
+                return contentService.updateContent(contentId, dirId, title, content, type);
             }
 
             @Override

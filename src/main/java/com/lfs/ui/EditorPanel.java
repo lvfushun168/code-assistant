@@ -25,6 +25,12 @@ public class EditorPanel extends JPanel {
     private Long cloudDirId;
     private String cloudTitle;
 
+    private String currentSyntax = "txt";
+
+    public String getCurrentSyntax() {
+        return currentSyntax;
+    }
+
     public EditorPanel(MainFrameController controller, UserPreferencesService preferencesService) {
         super(new BorderLayout());
         this.controller = controller;
@@ -69,6 +75,8 @@ public class EditorPanel extends JPanel {
     }
 
     private FindReplaceDialog findReplaceDialog;
+    private JMenu syntaxMenu;
+    private final ButtonGroup syntaxGroup = new ButtonGroup();
 
     private void setupFindShortcut() {
         InputMap inputMap = rightTextArea.getInputMap(JComponent.WHEN_FOCUSED);
@@ -112,6 +120,26 @@ public class EditorPanel extends JPanel {
         rightTextArea.setFont(rightTextArea.getFont().deriveFont(fontSize));
         rightTextArea.setLineWrap(preferencesService.loadLineWrap());
 
+        // 添加语法高亮切换菜单
+        JPopupMenu popupMenu = rightTextArea.getPopupMenu();
+        syntaxMenu = new JMenu("语法类型"); // 文档类型
+
+        // 对 AppConfig.ALLOWED_EXTENSIONS 进行排序以获得一致的顺序
+        java.util.List<String> sortedExtensions = new java.util.ArrayList<>(com.lfs.config.AppConfig.ALLOWED_EXTENSIONS);
+        java.util.Collections.sort(sortedExtensions);
+
+        for (String extension : sortedExtensions) {
+            JRadioButtonMenuItem syntaxItem = new JRadioButtonMenuItem(extension);
+            syntaxItem.setActionCommand(extension);
+            syntaxItem.addActionListener(e -> setSyntaxStyle(e.getActionCommand()));
+            syntaxGroup.add(syntaxItem);
+            syntaxMenu.add(syntaxItem);
+        }
+
+        popupMenu.addSeparator();
+        popupMenu.add(syntaxMenu);
+
+
         RTextScrollPane rightScrollPane = new RTextScrollPane(rightTextArea);
         rightScrollPane.setLineNumbersEnabled(true);
 
@@ -121,7 +149,6 @@ public class EditorPanel extends JPanel {
     private void setupSaveShortcut() {
         InputMap inputMap = rightTextArea.getInputMap(JComponent.WHEN_FOCUSED);
         ActionMap actionMap = rightTextArea.getActionMap();
-
         KeyStroke keyStroke = KeyStroke.getKeyStroke(KeyEvent.VK_S, Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx());
         String saveActionKey = "saveAction";
 
@@ -166,56 +193,109 @@ public class EditorPanel extends JPanel {
         if (lastDot > 0) {
             String extension = fileName.substring(lastDot + 1);
             setSyntaxStyle(extension);
+        } else {
+            // 如果没有扩展名，则不设置语法
+            setSyntaxStyle("none");
         }
     }
 
+    /**
+     * 更新语法菜单中的选中项
+     * @param currentExtension 当前激活的扩展名
+     */
+    private void updateSyntaxMenuSelection(String currentExtension) {
+        if (syntaxMenu == null) return;
+        for (int i = 0; i < syntaxMenu.getItemCount(); i++) {
+            JMenuItem item = syntaxMenu.getItem(i);
+            if (item instanceof JRadioButtonMenuItem) {
+                JRadioButtonMenuItem radioItem = (JRadioButtonMenuItem) item;
+                if (radioItem.getActionCommand().equalsIgnoreCase(currentExtension)) {
+                    radioItem.setSelected(true);
+                    break;
+                }
+            }
+        }
+    }
+
+
     public void setSyntaxStyle(String extension) {
-        switch (extension.toLowerCase()) {
+        String style;
+        String effectiveExtension = extension.toLowerCase();
+        switch (effectiveExtension) {
             case "java":
-                rightTextArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JAVA);
+                style = SyntaxConstants.SYNTAX_STYLE_JAVA;
                 break;
             case "py":
-                rightTextArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_PYTHON);
+                style = SyntaxConstants.SYNTAX_STYLE_PYTHON;
                 break;
             case "js":
-                rightTextArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JAVASCRIPT);
+                style = SyntaxConstants.SYNTAX_STYLE_JAVASCRIPT;
                 break;
             case "ts":
-                rightTextArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_TYPESCRIPT);
+                style = SyntaxConstants.SYNTAX_STYLE_TYPESCRIPT;
                 break;
             case "html":
             case "htm":
-                rightTextArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_HTML);
+                style = SyntaxConstants.SYNTAX_STYLE_HTML;
                 break;
             case "css":
-                rightTextArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_CSS);
+                style = SyntaxConstants.SYNTAX_STYLE_CSS;
                 break;
             case "xml":
-                rightTextArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_XML);
+                style = SyntaxConstants.SYNTAX_STYLE_XML;
                 break;
             case "json":
-                rightTextArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JSON);
+                style = SyntaxConstants.SYNTAX_STYLE_JSON;
                 break;
             case "sql":
-                rightTextArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_SQL);
+                style = SyntaxConstants.SYNTAX_STYLE_SQL;
                 break;
             case "md":
-                rightTextArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_MARKDOWN);
+                style = SyntaxConstants.SYNTAX_STYLE_MARKDOWN;
                 break;
             case "sh":
-                rightTextArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_UNIX_SHELL);
+                style = SyntaxConstants.SYNTAX_STYLE_UNIX_SHELL;
                 break;
             case "bat":
-                rightTextArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_WINDOWS_BATCH);
+                style = SyntaxConstants.SYNTAX_STYLE_WINDOWS_BATCH;
                 break;
             case "yaml":
             case "yml":
-                rightTextArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_YAML);
+                style = SyntaxConstants.SYNTAX_STYLE_YAML;
+                break;
+            case "c":
+                style = SyntaxConstants.SYNTAX_STYLE_C;
+                break;
+            case "cpp":
+                style = SyntaxConstants.SYNTAX_STYLE_CPLUSPLUS;
+                break;
+            case "cs":
+                style = SyntaxConstants.SYNTAX_STYLE_CSHARP;
+                break;
+            case "go":
+                style = SyntaxConstants.SYNTAX_STYLE_GO;
+                break;
+            case "php":
+                style = SyntaxConstants.SYNTAX_STYLE_PHP;
+                break;
+            case "rb":
+                style = SyntaxConstants.SYNTAX_STYLE_RUBY;
+                break;
+            case "kt":
+            case "kts":
+                style = SyntaxConstants.SYNTAX_STYLE_KOTLIN;
+                break;
+            case "gradle":
+                style = SyntaxConstants.SYNTAX_STYLE_GROOVY; // Gradle 文件使用 Groovy 语法
                 break;
             default:
-                rightTextArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_NONE);
+                style = SyntaxConstants.SYNTAX_STYLE_NONE;
+                effectiveExtension = "none";
                 break;
         }
+        rightTextArea.setSyntaxEditingStyle(style);
+        this.currentSyntax = effectiveExtension;
+        updateSyntaxMenuSelection(effectiveExtension);
     }
 
     public void zoomIn() {

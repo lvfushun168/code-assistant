@@ -48,7 +48,7 @@ public class ContentService {
      * @param content 文档内容
      * @return 创建成功后的文档信息
      */
-    public ContentResponse createContent(Long dirId, String title, String content) {
+    public ContentResponse createContent(Long dirId, String title, String content, String type) {
         String url = AppConfig.BASE_URL + AppConfig.CONTENT_URL;
 
         try {
@@ -56,6 +56,7 @@ public class ContentService {
             Map<String, Object> meta = new HashMap<>();
             meta.put("dirId", dirId);
             meta.put("title", title);
+            meta.put("type", type); // 添加类型
             String metaJson = JSONUtil.toJsonStr(meta);
             // 将JSON字符串包装成BytesResource，并提供一个.json后缀的文件名，Hutool会据此设置Content-Type
             byte[] metaBytes = metaJson.getBytes(StandardCharsets.UTF_8);
@@ -63,7 +64,8 @@ public class ContentService {
 
             // 2. 构建文件部分
             byte[] contentBytes = content.getBytes(StandardCharsets.UTF_8);
-            BytesResource fileResource = new BytesResource(contentBytes, title + ".txt");
+            // 使用传入的type作为文件扩展名
+            BytesResource fileResource = new BytesResource(contentBytes, title + "." + type);
 
             // 3. 发送multipart/form-data请求
             HttpResponse response = HttpClientService.createPostRequest(url, true)
@@ -76,28 +78,21 @@ public class ContentService {
 
             if (apiResponse.isSuccess()) {
                 Object data = apiResponse.getData();
-                if (data instanceof Integer) { // 后端可能返回Integer类型
-                    Long id = ((Integer) data).longValue();
+                if (data instanceof Integer) {
                     ContentResponse newContent = new ContentResponse();
-                    newContent.setId(id);
-                    newContent.setDirId(dirId);
-                    newContent.setTitle(title);
-                    return newContent;
-                } else if (data instanceof Long) {
-                    Long id = (Long) data;
-                    ContentResponse newContent = new ContentResponse();
-                    newContent.setId(id);
+                    newContent.setId(Long.valueOf((Integer) data));
                     newContent.setDirId(dirId);
                     newContent.setTitle(title);
                     return newContent;
                 } else if (data != null) {
-                    // 如果data不是Long/Integer，但也不是null，尝试解析成ContentResponse对象
+                    // 如果data不是Long，但也不是null，尝试解析成ContentResponse对象
                     return JSONUtil.toBean(JSONUtil.toJsonStr(data), ContentResponse.class);
                 } else {
                     // data为null，返回一个临时的ContentResponse（无ID），以便UI能够显示新文件
                     ContentResponse tempResponse = new ContentResponse();
                     tempResponse.setTitle(title);
                     tempResponse.setDirId(dirId);
+                    tempResponse.setType(type);
                     return tempResponse;
                 }
             } else {
@@ -119,7 +114,7 @@ public class ContentService {
      * @param content 文档内容 (可选, 为null则不更新)
      * @return 更新成功后的文档信息
      */
-    public ContentResponse updateContent(Long id, Long dirId, String title, String content) {
+    public ContentResponse updateContent(Long id, Long dirId, String title, String content, String type) {
         String url = AppConfig.BASE_URL + AppConfig.CONTENT_URL;
 
         try {
@@ -128,6 +123,9 @@ public class ContentService {
             meta.put("id", id);
             meta.put("dirId", dirId);
             meta.put("title", title);
+            if (type != null && !type.isEmpty()) {
+                meta.put("type", type);
+            }
             String metaJson = JSONUtil.toJsonStr(meta);
             byte[] metaBytes = metaJson.getBytes(StandardCharsets.UTF_8);
             BytesResource metaResource = new BytesResource(metaBytes, "meta.json");
@@ -135,11 +133,13 @@ public class ContentService {
             var request = HttpClientService.createPutRequest(url, true)
                     .form("meta", metaResource);
 
-            // 2. 确保总是存在 file part，即使内容为空
-            String fileContent = (content != null) ? content : "";
-            byte[] contentBytes = fileContent.getBytes(StandardCharsets.UTF_8);
-            BytesResource fileResource = new BytesResource(contentBytes, title + ".txt");
-            request.form("file", fileResource);
+            // 2. 如果提供了内容，则添加 file part
+            if (content != null) {
+                byte[] contentBytes = content.getBytes(StandardCharsets.UTF_8);
+                String extension = (type != null && !type.isEmpty()) ? type : "txt";
+                BytesResource fileResource = new BytesResource(contentBytes, title + "." + extension);
+                request.form("file", fileResource);
+            }
 
 
             // 3. 发送multipart/form-data请求
@@ -154,9 +154,10 @@ public class ContentService {
                 updatedContent.setId(id);
                 updatedContent.setDirId(dirId);
                 updatedContent.setTitle(title);
+                updatedContent.setType(type);
                 return updatedContent;
             } else {
-                NotificationUtil.showErrorDialog(null, "更新文件失败: " + apiResponse.getMessage());
+                NotificationUtil.showErrorDialog(null, apiResponse.getMessage());
                 return null;
             }
         } catch (Exception e) {
