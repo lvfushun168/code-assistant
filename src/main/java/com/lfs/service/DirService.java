@@ -71,7 +71,10 @@ public class DirService {
         }
     }
 
-    public DirTreeResponse updateDir(Long id, Long parentId, String name) {
+    /**
+     * 更新目录 (重命名或移动)
+     */
+    public Long updateDir(Long id, Long parentId, String name) {
         String url = AppConfig.BASE_URL + AppConfig.DIR_URL;
         try {
             UpdateDirRequest request = new UpdateDirRequest(id, parentId, name);
@@ -80,16 +83,16 @@ public class DirService {
                     .contentType("application/json")
                     .execute();
 
-            TypeReference<BackendResponse<DirTreeResponse>> typeRef = new TypeReference<>() {};
-            BackendResponse<DirTreeResponse> apiResponse = JSONUtil.toBean(response.body(), typeRef, false);
+            TypeReference<BackendResponse<Long>> typeRef = new TypeReference<>() {};
+            BackendResponse<Long> apiResponse = JSONUtil.toBean(response.body(), typeRef, false);
 
             if (apiResponse.getCode() != 200) {
-                NotificationUtil.showErrorDialog(null, "重命名失败: " + apiResponse.getMessage());
+                NotificationUtil.showErrorDialog(null, "更新失败: " + apiResponse.getMessage());
                 return null;
             }
             return apiResponse.getData();
         } catch (Exception e) {
-            NotificationUtil.showErrorDialog(null, "重命名目录时发生异常: " + e.getMessage());
+            NotificationUtil.showErrorDialog(null, "更新目录时发生异常: " + e.getMessage());
             e.printStackTrace();
             return null;
         }

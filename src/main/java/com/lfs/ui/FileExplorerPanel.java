@@ -869,29 +869,7 @@ public class FileExplorerPanel extends JPanel {
         renameItem.addActionListener(e -> {
             String newName = (String) JOptionPane.showInputDialog(this, "请输入新名称:", "重命名", JOptionPane.PLAIN_MESSAGE, null, null, dir.getName());
             if (newName != null && !newName.trim().isEmpty()) {
-                LoadingDialog loadingDialog = new LoadingDialog((Frame) SwingUtilities.getWindowAncestor(FileExplorerPanel.this));
-                final String finalNewName = newName;
-                SwingWorker<DirTreeResponse, Void> worker = new SwingWorker<>() {
-                    @Override
-                    protected DirTreeResponse doInBackground() throws Exception {
-                        return dirService.updateDir(dir.getId(), dir.getParentId(), finalNewName);
-                    }
-                    @Override
-                    protected void done() {
-                        loadingDialog.dispose();
-                        try {
-                            DirTreeResponse updatedDir = get();
-                            if (updatedDir != null) {
-                                dir.setName(updatedDir.getName());
-                                cloudTreeModel.nodeChanged(node);
-                            }
-                        } catch (Exception ex) {
-                            ex.printStackTrace();
-                        }
-                    }
-                };
-                worker.execute();
-                loadingDialog.setVisible(true);
+                controller.renameCloudDir(dir.getId(), dir.getParentId(), newName.trim());
             }
         });
         popupMenu.add(renameItem);
@@ -960,7 +938,7 @@ public class FileExplorerPanel extends JPanel {
         }
     }
 
-    // 辅助方法：忽略类型的ID比较（容错性极强）
+    // 忽略类型的ID比较
     private boolean isIdMatch(Long id1, Object id2Obj) {
         if (id1 == null || id2Obj == null) return false;
         String s1 = String.valueOf(id1);
@@ -1004,6 +982,24 @@ public class FileExplorerPanel extends JPanel {
             ContentResponse oldContent = (ContentResponse) nodeToUpdate.getUserObject();
             oldContent.setTitle(updatedContent.getTitle());
             cloudTreeModel.nodeChanged(nodeToUpdate);
+        } else {
+            loadCloudDirectory();
+        }
+    }
+
+    public void updateCloudDirNode(DirTreeResponse updatedDir) {
+        if (updatedDir == null || updatedDir.getId() == null) {
+            return;
+        }
+        DefaultMutableTreeNode nodeToUpdate = findNodeById(updatedDir.getId());
+
+        if (nodeToUpdate != null) {
+            Object obj = nodeToUpdate.getUserObject();
+            if (obj instanceof DirTreeResponse) {
+                DirTreeResponse oldDir = (DirTreeResponse) obj;
+                oldDir.setName(updatedDir.getName());
+                cloudTreeModel.nodeChanged(nodeToUpdate);
+            }
         } else {
             loadCloudDirectory();
         }

@@ -266,9 +266,44 @@ public class MainFrameController {
                 try {
                     ContentResponse response = get();
                     if (response != null) {
-                        NotificationUtil.showSuccessDialog(mainFrame, "重命名成功！");
+//                        NotificationUtil.showToast(mainFrame, "重命名成功");
                         // 局部刷新节点
                         mainFrame.getFileExplorerPanel().updateCloudContentNode(response);
+                    }
+                } catch (Exception e) {
+                    NotificationUtil.showErrorDialog(mainFrame, "重命名失败: " + e.getMessage());
+                    e.printStackTrace();
+                } finally {
+                    mainFrame.setCursor(Cursor.getDefaultCursor());
+                }
+            }
+        }.execute();
+    }
+
+    public void renameCloudDir(Long id, Long parentId, String newName) {
+        mainFrame.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+        new SwingWorker<DirTreeResponse, Void>() {
+            @Override
+            protected DirTreeResponse doInBackground() throws Exception {
+                Long resultParentId = dirService.updateDir(id, parentId, newName);
+                if (resultParentId != null) {
+                    return DirTreeResponse.builder()
+                            .id(id)
+                            .parentId(resultParentId)
+                            .name(newName)
+                            .build();
+                }
+                return null;
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    DirTreeResponse response = get();
+                    if (response != null) {
+//                        NotificationUtil.showToast(mainFrame, "重命名成功！");
+                        // 局部刷新节点
+                        mainFrame.getFileExplorerPanel().updateCloudDirNode(response);
                     }
                 } catch (Exception e) {
                     NotificationUtil.showErrorDialog(mainFrame, "重命名失败: " + e.getMessage());
@@ -327,20 +362,23 @@ public class MainFrameController {
                     ContentResponse updated = new ContentResponse();
                     updated.setId(content.getId());
                     updated.setTitle(content.getTitle());
-                    updated.setDirId(targetDirId); // 关键：更新父ID
+                    updated.setDirId(targetDirId);
                     return updated;
+
                 } else if (draggedObject instanceof DirTreeResponse) {
                     DirTreeResponse dir = (DirTreeResponse) draggedObject;
-                    dirService.updateDir(dir.getId(), targetDirId, dir.getName());
-                    // 手动构造更新后的对象
-                    DirTreeResponse updated = new DirTreeResponse();
-                    updated.setId(dir.getId());
-                    updated.setName(dir.getName());
-                    updated.setParentId(targetDirId); // 关键：更新父ID
-                    // 子节点列表暂时设为null或保留原样，由 Panel 的逻辑处理子节点搬运
-                    updated.setChildren(dir.getChildren());
-                    updated.setContents(dir.getContents());
-                    return updated;
+                    Long resultParentId = dirService.updateDir(dir.getId(), targetDirId, dir.getName());
+                    if (resultParentId != null) {
+                        // 手动构造更新后的对象
+                        DirTreeResponse updated = new DirTreeResponse();
+                        updated.setId(dir.getId());
+                        updated.setName(dir.getName());
+                        updated.setParentId(targetDirId);
+                        // 保留原有的子节点引用，避免丢失结构
+                        updated.setChildren(dir.getChildren());
+                        updated.setContents(dir.getContents());
+                        return updated;
+                    }
                 }
                 return null;
             }
@@ -351,7 +389,6 @@ public class MainFrameController {
                     Object updatedObject = get();
                     if (updatedObject != null) {
                         NotificationUtil.showToast(mainFrame, "移动成功！");
-                        // 调用 Panel 的局部更新
                         mainFrame.getFileExplorerPanel().moveCloudNodeLocal(nodeToMove, targetNode, updatedObject);
                     } else {
                         NotificationUtil.showErrorDialog(mainFrame, "移动失败：无法构造更新对象。");
