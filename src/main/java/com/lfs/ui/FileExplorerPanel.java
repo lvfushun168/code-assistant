@@ -930,7 +930,7 @@ public class FileExplorerPanel extends JPanel {
             NotificationUtil.showErrorDialog(this, "无法确定父目录，无法创建文件。");
             return;
         }
-        String title = JOptionPane.showInputDialog(this, "请输入新文档名称 (无需扩展名):", "新建云端文档", JOptionPane.PLAIN_MESSAGE);
+        String title = JOptionPane.showInputDialog(this, "请输入新文档名称", "新建云端文档", JOptionPane.PLAIN_MESSAGE);
         if (title != null && !title.trim().isEmpty()) {
             controller.createAndOpenCloudFile(dirId, title.trim());
         }
@@ -1043,5 +1043,47 @@ public class FileExplorerPanel extends JPanel {
             // 如果找不到，可能已经被删了，或者树状态不一致，刷新整个树
             loadCloudDirectory();
         }
+    }
+
+    /**
+     * 局部移动节点
+     * 根据 ID 去查找 TreeModel 中真正的节点，而不是操作可能被序列化反序列化过的副本。
+     *
+     * @param nodeToMoveStub    被拖拽的节点存根（可能是反序列化的副本）
+     * @param newParentNode     目标父节点
+     * @param updatedUserObject 包含了更新后ID（dirId/parentId）的新业务对象
+     */
+    public void moveCloudNodeLocal(DefaultMutableTreeNode nodeToMoveStub, DefaultMutableTreeNode newParentNode, Object updatedUserObject) {
+        // 在树模型中查找真正的“活体”节点，避免操作副本导致的残留问题
+        DefaultMutableTreeNode liveNode = null;
+        Object userObj = nodeToMoveStub.getUserObject();
+
+        // 假设根节点是 cloudRootNode 的第一个子节点
+        if (cloudRootNode.getChildCount() == 0) return;
+        DefaultMutableTreeNode apiRootNode = (DefaultMutableTreeNode) cloudRootNode.getFirstChild();
+
+        if (userObj instanceof ContentResponse) {
+            Long id = ((ContentResponse) userObj).getId();
+            liveNode = findCloudContentNode(apiRootNode, id);
+        } else if (userObj instanceof DirTreeResponse) {
+            Long id = ((DirTreeResponse) userObj).getId();
+            liveNode = findCloudDirectoryNode(apiRootNode, id);
+        }
+
+        if (liveNode == null) {
+            System.out.println("局部移动失败：在当前树中找不到该节点。回退到全局刷新。");
+            loadCloudDirectory();
+            return;
+        }
+
+        cloudTreeModel.removeNodeFromParent(liveNode);
+
+        liveNode.setUserObject(updatedUserObject);
+
+        cloudTreeModel.insertNodeInto(liveNode, newParentNode, newParentNode.getChildCount());
+
+        TreePath newPath = new TreePath(liveNode.getPath());
+        cloudFileTree.scrollPathToVisible(newPath);
+        cloudFileTree.setSelectionPath(newPath);
     }
 }

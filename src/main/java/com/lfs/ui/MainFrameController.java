@@ -305,41 +305,43 @@ public class MainFrameController {
         }.execute();
     }
 
+    /**
+     * 移动云端节点
+     * @param nodeToMove 被拖拽的节点
+     * @param targetNode 目标目录节点
+     */
     public void moveCloudNode(DefaultMutableTreeNode nodeToMove, DefaultMutableTreeNode targetNode) {
         Object draggedObject = nodeToMove.getUserObject();
         DirTreeResponse targetDir = (DirTreeResponse) targetNode.getUserObject();
         Long targetDirId = targetDir.getId();
 
-        System.out.println("尝试移动节点。 对象类型: " + (draggedObject != null ? draggedObject.getClass().getName() : "null"));
-        System.out.println("目标目录 ID: " + targetDirId);
-
-
         mainFrame.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 
-        new SwingWorker<Boolean, Void>() {
+        // 修改SwingWorker的返回类型为Object，以便携带回更新后的对象
+        new SwingWorker<Object, Void>() {
             @Override
-            protected Boolean doInBackground() throws Exception {
-                System.out.println("SwingWorker doInBackground 已启动。");
+            protected Object doInBackground() throws Exception {
                 if (draggedObject instanceof ContentResponse) {
                     ContentResponse content = (ContentResponse) draggedObject;
                     // 内容传null，因为只移动，不更新内容
-                    return contentService.updateContent(content.getId(), targetDirId, content.getTitle(), null) != null;
+                    return contentService.updateContent(content.getId(), targetDirId, content.getTitle(), null);
                 } else if (draggedObject instanceof DirTreeResponse) {
                     DirTreeResponse dir = (DirTreeResponse) draggedObject;
-                    return dirService.updateDir(dir.getId(), targetDirId, dir.getName()) != null;
+                    return dirService.updateDir(dir.getId(), targetDirId, dir.getName());
                 }
-                System.out.println("未知的对象类型，返回 false。");
-                return false;
+                return null;
             }
 
             @Override
             protected void done() {
                 try {
-                    if (get()) {
+                    // 获取后端返回的更新后的对象（包含了新的parentId或dirId）
+                    Object updatedObject = get();
+                    if (updatedObject != null) {
                         NotificationUtil.showToast(mainFrame, "移动成功！");
-                        mainFrame.getFileExplorerPanel().loadCloudDirectory();
+                        // 关键修改：调用 FileExplorerPanel 的局部更新方法，而不是全局重新加载
+                        mainFrame.getFileExplorerPanel().moveCloudNodeLocal(nodeToMove, targetNode, updatedObject);
                     }
-                    // 无需else块，因为具体的错误已在服务层通过对话框显示
                 } catch (Exception e) {
                     NotificationUtil.showErrorDialog(mainFrame, "移动操作失败: " + e.getMessage());
                     e.printStackTrace();
