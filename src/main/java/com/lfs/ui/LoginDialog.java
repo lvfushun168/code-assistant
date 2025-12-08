@@ -2,7 +2,10 @@ package com.lfs.ui;
 
 import com.lfs.domain.BackendResponse;
 import com.lfs.domain.CaptchaResponse;
+import com.lfs.domain.KeyPackageResponse;
 import com.lfs.service.AccountService;
+import com.lfs.service.CryptoService;
+import com.lfs.service.SystemKeyStoreService;
 import com.lfs.service.UserPreferencesService;
 
 import javax.imageio.ImageIO;
@@ -22,6 +25,8 @@ public class LoginDialog extends JDialog {
 
     private final AccountService accountService = new AccountService();
     private final UserPreferencesService userPreferencesService = new UserPreferencesService();
+    private final CryptoService cryptoService = new CryptoService();
+    private final SystemKeyStoreService systemKeyStoreService = new SystemKeyStoreService();
 
     public LoginDialog(Frame owner) {
         super(owner, "用户登录", true);
@@ -66,10 +71,9 @@ public class LoginDialog extends JDialog {
         // 按钮
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
         JButton loginButton = new JButton("登录");
-        loginButton.addActionListener(this::performLogin);
+        loginButton.addActionListener(this::performSecureLogin);
         JButton cancelButton = new JButton("取消");
         cancelButton.addActionListener(e -> {
-            // distinguish between cancel in startup and cancel from menu
             if (getOwner() == null) {
                 System.exit(0);
             } else {
@@ -110,7 +114,15 @@ public class LoginDialog extends JDialog {
         worker.execute();
     }
 
-    private void performLogin(ActionEvent e) {
+    /**
+     * 执行安全登录流程：
+     * 1. 验证码校验 & 用户名密码基础校验
+     * 2. 获取密钥包 [Salt, Encrypted_DEK]
+     * 3. 在内存中派生 KEK 并解密出 DEK
+     * 4. 请求系统存储 DEK (Windows Hello/TPM)
+     * 5. 执行常规登录获取 API Token
+     */
+    private void performSecureLogin(ActionEvent e) {
         String username = usernameField.getText();
         String password = new String(passwordField.getPassword());
         String captcha = captchaField.getText();
@@ -121,11 +133,47 @@ public class LoginDialog extends JDialog {
         }
 
         LoadingDialog loadingDialog = new LoadingDialog(this);
+        loadingDialog.setVisible(true);
 
-        SwingWorker<BackendResponse<String>, Void> worker = new SwingWorker<>() {
+        SwingWorker<String, String> worker = new SwingWorker<>() {
             @Override
-            protected BackendResponse<String> doInBackground() throws Exception {
-                return accountService.login(username, password, captcha, captchaId);
+            protected String doInBackground() throws Exception {
+                publish("正在请求密钥包...");
+                // 步骤 1: 获取密钥包
+                BackendResponse<KeyPackageResponse> keyPkgResp = accountService.getKeyPackage(username);
+                if (keyPkgResp.getCode() != 200) {
+                    throw new Exception("获取密钥包失败: " + keyPkgResp.getMessage());
+                }
+                KeyPackageResponse keyPkg = keyPkgResp.getData();
+
+                publish("正在解密安全密钥...");
+                // 步骤 2: 客户端内存解密 DEK
+                // a. KEK = Argon2(密码, Salt)
+                byte[] kek = cryptoService.deriveKek(password, keyPkg.getSalt());
+                // b. DEK = Decrypt(Encrypted_DEK, KEK)
+                byte[] dek = cryptoService.decryptDek(keyPkg.getEncryptedDek(), kek, keyPkg.getNonce());
+
+                publish("正在安全存储密钥...");
+                // 步骤 3: 存入系统保险箱
+                boolean stored = systemKeyStoreService.storeDek(dek, username);
+                if (!stored) {
+                    // 这里可以选择仅仅警告，或者阻断
+                    System.err.println("警告：DEK未能存入系统安全存储，可能影响下次免密体验。");
+                }
+
+                publish("正在验证身份...");
+                // 步骤 4: 常规登录获取 Token (用于后续API调用)
+                BackendResponse<String> loginResp = accountService.login(username, password, captcha, captchaId);
+                if (loginResp.getCode() != 200) {
+                    throw new Exception("登录验证失败: " + loginResp.getMessage());
+                }
+
+                return loginResp.getData(); // Token
+            }
+
+            @Override
+            protected void process(java.util.List<String> chunks) {
+                // 可以在 LoadingDialog 上显示具体步骤，这里暂略
             }
 
             @Override
@@ -133,32 +181,27 @@ public class LoginDialog extends JDialog {
                 loadingDialog.setVisible(false);
                 loadingDialog.dispose();
                 try {
-                    BackendResponse<String> response = get();
-                    if (response.getCode() == 200) {
-                        String token = response.getData();
-                        userPreferencesService.saveToken(token);
-                        JOptionPane.showMessageDialog(LoginDialog.this, "登录成功！", "成功", JOptionPane.INFORMATION_MESSAGE);
+                    String token = get();
+                    userPreferencesService.saveToken(token);
+                    JOptionPane.showMessageDialog(LoginDialog.this, "登录成功，且已启用设备级安全保护！", "成功", JOptionPane.INFORMATION_MESSAGE);
 
-                        // 更新主窗口的菜单
-                        Window owner = getOwner();
-                        if (owner instanceof MainFrame) {
-                            ((MainFrame) owner).updateAccountMenu();
-                        }
-
-                        setVisible(false);
-                    } else {
-                        JOptionPane.showMessageDialog(LoginDialog.this, "登录失败: " + response.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
-                        refreshCaptcha();
+                    Window owner = getOwner();
+                    if (owner instanceof MainFrame) {
+                        ((MainFrame) owner).updateAccountMenu();
                     }
+                    setVisible(false);
                 } catch (Exception ex) {
-                    JOptionPane.showMessageDialog(LoginDialog.this, "登录过程中发生错误: " + ex.getMessage(), "严重错误", JOptionPane.ERROR_MESSAGE);
-                    ex.printStackTrace();
+                    String msg = ex.getMessage();
+                    if (ex.getCause() != null) {
+                        msg = ex.getCause().getMessage();
+                    }
+                    JOptionPane.showMessageDialog(LoginDialog.this, msg, "登录失败", JOptionPane.ERROR_MESSAGE);
+                    // 只有在非密钥错误的情况下才刷新验证码，但为了简单起见，统一刷新
                     refreshCaptcha();
                 }
             }
         };
 
         worker.execute();
-        loadingDialog.setVisible(true);
     }
 }

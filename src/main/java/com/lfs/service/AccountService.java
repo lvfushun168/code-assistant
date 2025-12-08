@@ -5,16 +5,14 @@ import com.alibaba.fastjson.TypeReference;
 import com.lfs.config.AppConfig;
 import com.lfs.domain.BackendResponse;
 import com.lfs.domain.CaptchaResponse;
+import com.lfs.domain.KeyPackageResponse;
 import com.lfs.domain.LoginRequest;
 import com.lfs.domain.User;
 import lombok.extern.slf4j.Slf4j;
-import org.mindrot.jbcrypt.BCrypt;
-import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import cn.hutool.crypto.digest.DigestUtil;
 
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -22,6 +20,31 @@ import java.util.UUID;
  */
 @Slf4j
 public class AccountService {
+
+    /**
+     * 获取密钥包 (Salt, Encrypted_DEK)
+     * 用于设备首次登录时恢复 DEK
+     *
+     * @param username 用户名
+     * @return 密钥包响应
+     */
+    public BackendResponse<KeyPackageResponse> getKeyPackage(String username) {
+        try {
+            // 假设后端接口为 /account/key-package?username=xxx
+            String url = AppConfig.BASE_URL + AppConfig.API_PREFIX + "/account/key-package?username=" + username;
+
+            HttpResponse response = HttpClientService.createGetRequest(url, false).execute();
+
+            String responseBody = response.body();
+            return JSON.parseObject(responseBody, new TypeReference<BackendResponse<KeyPackageResponse>>() {});
+        } catch (Exception e) {
+            log.error("获取密钥包失败", e);
+            BackendResponse<KeyPackageResponse> errorResponse = new BackendResponse<>();
+            errorResponse.setCode(500);
+            errorResponse.setMessage(e.getMessage());
+            return errorResponse;
+        }
+    }
 
     /**
      * 注册新用户
@@ -61,6 +84,8 @@ public class AccountService {
 
     public BackendResponse<String> login(String username, String password, String captcha, String captchaId) {
         try {
+            // 注意：这里仍然发送 Hash 后的密码用于身份认证（换取Token）
+            // 在更严格的零知识架构中，身份认证可能使用 SRP 协议，但此处保持与原逻辑兼容
             String hashedPassword = DigestUtil.sha256Hex(password);
 
             LoginRequest loginRequest = new LoginRequest();

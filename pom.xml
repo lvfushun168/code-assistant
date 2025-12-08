@@ -37,8 +37,6 @@
             <version>5.8.2</version>
         </dependency>
 
-
-
         <!-- SLF4J 日志 -->
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -51,7 +49,7 @@
             <version>1.7.32</version>
         </dependency>
 
-        <!-- BCrypt 密码加密 -->
+        <!-- BCrypt 密码加密 (保留用于旧逻辑，新逻辑使用BouncyCastle) -->
         <dependency>
             <groupId>org.mindrot</groupId>
             <artifactId>jbcrypt</artifactId>
@@ -68,6 +66,26 @@
             <artifactId>rsyntaxtextarea</artifactId>
             <version>3.4.0</version>
         </dependency>
+
+        <!-- Bouncy Castle 用于高级加密 (Argon2, AES-GCM) -->
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcprov-jdk15on</artifactId>
+            <version>1.70</version>
+        </dependency>
+
+        <!-- JNA 用于调用系统级API (Windows DPAPI等) -->
+        <dependency>
+            <groupId>net.java.dev.jna</groupId>
+            <artifactId>jna</artifactId>
+            <version>5.12.1</version>
+        </dependency>
+        <dependency>
+            <groupId>net.java.dev.jna</groupId>
+            <artifactId>jna-platform</artifactId>
+            <version>5.12.1</version>
+        </dependency>
+
     </dependencies>
 
     <build>
