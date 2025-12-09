@@ -208,7 +208,7 @@ public class LoginDialog extends JDialog {
                 try {
                     String token = get();
                     userPreferencesService.saveToken(token);
-                    JOptionPane.showMessageDialog(LoginDialog.this, "登录成功，且已启用设备级安全保护！", "成功", JOptionPane.INFORMATION_MESSAGE);
+                    JOptionPane.showMessageDialog(LoginDialog.this, "登录成功（已启用设备级安全防护）", "成功", JOptionPane.INFORMATION_MESSAGE);
 
                     Window owner = getOwner();
                     if (owner instanceof MainFrame) {
