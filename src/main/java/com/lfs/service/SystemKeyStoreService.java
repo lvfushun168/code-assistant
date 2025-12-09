@@ -30,7 +30,7 @@ public class SystemKeyStoreService {
                 return storeWindowsDPAPI(dek, accountId);
             } else {
                 // 对于 macOS/Linux，实际生产环境应使用 Keychain/SecretService
-                // 这里为演示目的，使用简单文件存储模拟
+                // 这里使用简单文件存储模拟
                 return storeFallback(dek, accountId);
             }
         } catch (Exception e) {
