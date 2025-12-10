@@ -1,5 +1,6 @@
 package com.lfs.ui;
 
+import com.lfs.domain.BackendResponse;
 import com.lfs.domain.ContentResponse;
 import com.lfs.domain.DirTreeResponse;
 import com.lfs.service.*;
@@ -285,8 +286,11 @@ public class MainFrameController {
         new SwingWorker<DirTreeResponse, Void>() {
             @Override
             protected DirTreeResponse doInBackground() throws Exception {
-                Long resultParentId = dirService.updateDir(id, parentId, newName);
-                if (resultParentId != null) {
+                BackendResponse<Long> response = dirService.updateDir(id, parentId, newName);
+
+                // 只要状态码是 200 就认为成功，即使 parentId 是 null (比如根目录)
+                if (response != null && response.getCode() == 200) {
+                    Long resultParentId = response.getData();
                     return DirTreeResponse.builder()
                             .id(id)
                             .parentId(resultParentId)
@@ -373,8 +377,9 @@ public class MainFrameController {
 
                 } else if (draggedObject instanceof DirTreeResponse) {
                     DirTreeResponse dir = (DirTreeResponse) draggedObject;
-                    Long resultParentId = dirService.updateDir(dir.getId(), targetDirId, dir.getName());
-                    if (resultParentId != null) {
+                    BackendResponse<Long> response = dirService.updateDir(dir.getId(), targetDirId, dir.getName());
+
+                    if (response != null && response.getCode() == 200) {
                         // 手动构造更新后的对象
                         DirTreeResponse updated = new DirTreeResponse();
                         updated.setId(dir.getId());

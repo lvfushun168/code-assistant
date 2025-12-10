@@ -78,7 +78,7 @@ public class DirService {
     /**
      * 更新目录 (重命名或移动)
      */
-    public Long updateDir(Long id, Long parentId, String name) {
+    public BackendResponse<Long> updateDir(Long id, Long parentId, String name) {
         String url = AppConfig.BASE_URL + AppConfig.DIR_URL;
         try {
             UpdateDirRequest request = new UpdateDirRequest(id, parentId, name);
@@ -92,9 +92,9 @@ public class DirService {
 
             if (apiResponse.getCode() != 200) {
                 NotificationUtil.showErrorDialog(null, apiResponse.getMessage());
-                return null;
             }
-            return apiResponse.getData();
+            // 无论成功与否都返回 response 对象，让调用者判断 code
+            return apiResponse;
         } catch (Exception e) {
             NotificationUtil.showErrorDialog(null, "更新目录时发生异常: " + e.getMessage());
             e.printStackTrace();
