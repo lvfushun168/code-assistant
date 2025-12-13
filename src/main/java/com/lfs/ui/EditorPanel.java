@@ -10,6 +10,9 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 public class EditorPanel extends JPanel {
 
@@ -17,9 +20,7 @@ public class EditorPanel extends JPanel {
     private final MainFrameController controller;
     private final UserPreferencesService preferencesService;
     private File currentFile;
-    // RSyntaxTextArea 有自己的撤销管理器，所以我们不需要一个单独的。
 
-    // 云文件相关状态
     private boolean isCloudFile = false;
     private Long cloudContentId;
     private Long cloudDirId;
@@ -39,7 +40,6 @@ public class EditorPanel extends JPanel {
         initUI();
         setupSaveShortcut();
         setupFindShortcut();
-        // 撤销/重做由 RSyntaxTextArea 默认处理
     }
 
     public boolean isCloudFile() {
@@ -92,7 +92,6 @@ public class EditorPanel extends JPanel {
                 if (findReplaceDialog == null) {
                     Window owner = SwingUtilities.getWindowAncestor(EditorPanel.this);
                     if (owner instanceof Frame) {
-                        // FindReplaceDialog 需要一个 JTextArea，而 RSyntaxTextArea 是其子类，所以这应该能工作。
                         findReplaceDialog = new FindReplaceDialog((Frame) owner, rightTextArea);
                     }
                 }
@@ -111,22 +110,18 @@ public class EditorPanel extends JPanel {
             org.fife.ui.rsyntaxtextarea.Theme theme = org.fife.ui.rsyntaxtextarea.Theme.load(in);
             theme.apply(rightTextArea);
         } catch (java.io.IOException e) {
-            // 如果出现错误，我们可以记录它，但编辑器仍将使用默认颜色正常工作。
             e.printStackTrace();
         }
 
-        // 在应用主题后加载并应用用户偏好，以避免被主题覆盖
         float fontSize = preferencesService.loadFontSize();
         rightTextArea.setFont(rightTextArea.getFont().deriveFont(fontSize));
         rightTextArea.setLineWrap(preferencesService.loadLineWrap());
 
-        // 添加语法高亮切换菜单
         JPopupMenu popupMenu = rightTextArea.getPopupMenu();
-        syntaxMenu = new JMenu("语法类型"); // 文档类型
+        syntaxMenu = new JMenu("语法类型");
 
-        // 对 AppConfig.ALLOWED_EXTENSIONS 进行排序以获得一致的顺序
-        java.util.List<String> sortedExtensions = new java.util.ArrayList<>(com.lfs.config.AppConfig.ALLOWED_EXTENSIONS);
-        java.util.Collections.sort(sortedExtensions);
+        List<String> sortedExtensions = new ArrayList<>(com.lfs.config.AppConfig.ALLOWED_EXTENSIONS);
+        Collections.sort(sortedExtensions);
 
         for (String extension : sortedExtensions) {
             JRadioButtonMenuItem syntaxItem = new JRadioButtonMenuItem(extension);
@@ -138,7 +133,6 @@ public class EditorPanel extends JPanel {
 
         popupMenu.addSeparator();
         popupMenu.add(syntaxMenu);
-
 
         RTextScrollPane rightScrollPane = new RTextScrollPane(rightTextArea);
         rightScrollPane.setLineNumbersEnabled(true);
@@ -157,10 +151,8 @@ public class EditorPanel extends JPanel {
             @Override
             public void actionPerformed(ActionEvent e) {
                 if (isCloudFile) {
-                    // 如果是云文件，调用云文件保存逻辑
                     controller.saveCloudFile();
                 } else {
-                    // 否则，调用本地文件保存逻辑
                     controller.saveCurrentFile();
                 }
             }
@@ -176,9 +168,8 @@ public class EditorPanel extends JPanel {
     }
 
     public void setTextAreaContent(String content) {
-        // RSyntaxTextArea 的速度足够快，我们不需要为设置文本而进行复杂的监听器管理。
         rightTextArea.setText(content);
-        rightTextArea.discardAllEdits(); // 设置新内容后清除撤销历史
+        rightTextArea.discardAllEdits();
     }
 
     public File getCurrentFile() {
@@ -187,22 +178,25 @@ public class EditorPanel extends JPanel {
 
     public void setCurrentFile(File currentFile) {
         this.currentFile = currentFile;
-        // 根据文件扩展名设置语法
+
+        // 优先加载用户保存的语法偏好
+        String savedSyntax = preferencesService.loadFileSyntax(currentFile.getAbsolutePath());
+        if (savedSyntax != null) {
+            setSyntaxStyle(savedSyntax);
+            return;
+        }
+
+        // 默认自动推断
         String fileName = currentFile.getName();
         int lastDot = fileName.lastIndexOf('.');
         if (lastDot > 0) {
             String extension = fileName.substring(lastDot + 1);
             setSyntaxStyle(extension);
         } else {
-            // 如果没有扩展名，则不设置语法
             setSyntaxStyle("none");
         }
     }
 
-    /**
-     * 更新语法菜单中的选中项
-     * @param currentExtension 当前激活的扩展名
-     */
     private void updateSyntaxMenuSelection(String currentExtension) {
         if (syntaxMenu == null) return;
         for (int i = 0; i < syntaxMenu.getItemCount(); i++) {
@@ -217,77 +211,31 @@ public class EditorPanel extends JPanel {
         }
     }
 
-
     public void setSyntaxStyle(String extension) {
         String style;
         String effectiveExtension = extension.toLowerCase();
         switch (effectiveExtension) {
-            case "java":
-                style = SyntaxConstants.SYNTAX_STYLE_JAVA;
-                break;
-            case "py":
-                style = SyntaxConstants.SYNTAX_STYLE_PYTHON;
-                break;
-            case "js":
-                style = SyntaxConstants.SYNTAX_STYLE_JAVASCRIPT;
-                break;
-            case "ts":
-                style = SyntaxConstants.SYNTAX_STYLE_TYPESCRIPT;
-                break;
-            case "html":
-            case "htm":
-                style = SyntaxConstants.SYNTAX_STYLE_HTML;
-                break;
-            case "css":
-                style = SyntaxConstants.SYNTAX_STYLE_CSS;
-                break;
-            case "xml":
-                style = SyntaxConstants.SYNTAX_STYLE_XML;
-                break;
-            case "json":
-                style = SyntaxConstants.SYNTAX_STYLE_JSON;
-                break;
-            case "sql":
-                style = SyntaxConstants.SYNTAX_STYLE_SQL;
-                break;
-            case "md":
-                style = SyntaxConstants.SYNTAX_STYLE_MARKDOWN;
-                break;
-            case "sh":
-                style = SyntaxConstants.SYNTAX_STYLE_UNIX_SHELL;
-                break;
-            case "bat":
-                style = SyntaxConstants.SYNTAX_STYLE_WINDOWS_BATCH;
-                break;
-            case "yaml":
-            case "yml":
-                style = SyntaxConstants.SYNTAX_STYLE_YAML;
-                break;
-            case "c":
-                style = SyntaxConstants.SYNTAX_STYLE_C;
-                break;
-            case "cpp":
-                style = SyntaxConstants.SYNTAX_STYLE_CPLUSPLUS;
-                break;
-            case "cs":
-                style = SyntaxConstants.SYNTAX_STYLE_CSHARP;
-                break;
-            case "go":
-                style = SyntaxConstants.SYNTAX_STYLE_GO;
-                break;
-            case "php":
-                style = SyntaxConstants.SYNTAX_STYLE_PHP;
-                break;
-            case "rb":
-                style = SyntaxConstants.SYNTAX_STYLE_RUBY;
-                break;
-            case "kt":
-            case "kts":
-                style = SyntaxConstants.SYNTAX_STYLE_KOTLIN;
-                break;
-            case "gradle":
-                style = SyntaxConstants.SYNTAX_STYLE_GROOVY; // Gradle 文件使用 Groovy 语法
-                break;
+            case "java": style = SyntaxConstants.SYNTAX_STYLE_JAVA; break;
+            case "py": style = SyntaxConstants.SYNTAX_STYLE_PYTHON; break;
+            case "js": style = SyntaxConstants.SYNTAX_STYLE_JAVASCRIPT; break;
+            case "ts": style = SyntaxConstants.SYNTAX_STYLE_TYPESCRIPT; break;
+            case "html": case "htm": style = SyntaxConstants.SYNTAX_STYLE_HTML; break;
+            case "css": style = SyntaxConstants.SYNTAX_STYLE_CSS; break;
+            case "xml": style = SyntaxConstants.SYNTAX_STYLE_XML; break;
+            case "json": style = SyntaxConstants.SYNTAX_STYLE_JSON; break;
+            case "sql": style = SyntaxConstants.SYNTAX_STYLE_SQL; break;
+            case "md": style = SyntaxConstants.SYNTAX_STYLE_MARKDOWN; break;
+            case "sh": style = SyntaxConstants.SYNTAX_STYLE_UNIX_SHELL; break;
+            case "bat": style = SyntaxConstants.SYNTAX_STYLE_WINDOWS_BATCH; break;
+            case "yaml": case "yml": style = SyntaxConstants.SYNTAX_STYLE_YAML; break;
+            case "c": style = SyntaxConstants.SYNTAX_STYLE_C; break;
+            case "cpp": style = SyntaxConstants.SYNTAX_STYLE_CPLUSPLUS; break;
+            case "cs": style = SyntaxConstants.SYNTAX_STYLE_CSHARP; break;
+            case "go": style = SyntaxConstants.SYNTAX_STYLE_GO; break;
+            case "php": style = SyntaxConstants.SYNTAX_STYLE_PHP; break;
+            case "rb": style = SyntaxConstants.SYNTAX_STYLE_RUBY; break;
+            case "kt": case "kts": style = SyntaxConstants.SYNTAX_STYLE_KOTLIN; break;
+            case "gradle": style = SyntaxConstants.SYNTAX_STYLE_GROOVY; break;
             default:
                 style = SyntaxConstants.SYNTAX_STYLE_NONE;
                 effectiveExtension = "none";
@@ -296,6 +244,11 @@ public class EditorPanel extends JPanel {
         rightTextArea.setSyntaxEditingStyle(style);
         this.currentSyntax = effectiveExtension;
         updateSyntaxMenuSelection(effectiveExtension);
+
+        // 如果是本地文件，记录用户的选择
+        if (this.currentFile != null) {
+            preferencesService.saveFileSyntax(this.currentFile.getAbsolutePath(), effectiveExtension);
+        }
     }
 
     public void zoomIn() {

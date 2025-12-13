@@ -22,6 +22,9 @@ public class UserPreferencesService {
     private static final String FONT_SIZE_KEY = "fontSize";
     private static final String LINE_WRAP_KEY = "lineWrap";
 
+    // 语法类型前缀
+    private static final String FILE_SYNTAX_PREFIX = "fileSyntax_";
+
     public UserPreferencesService() {
         // 使用 userNodeForPackage 确保偏好设置按用户存储
         this.prefs = Preferences.userNodeForPackage(UserPreferencesService.class);
@@ -144,6 +147,32 @@ public class UserPreferencesService {
             if (lastDir.exists() && lastDir.isDirectory()) {
                 return lastDir;
             }
+        }
+        return null;
+    }
+
+    /**
+     * 保存特定文件的语法类型偏好
+     * @param filePath 文件的绝对路径
+     * @param syntax 语法类型后缀 (e.g., "java", "txt")
+     */
+    public void saveFileSyntax(String filePath, String syntax) {
+        if (filePath != null && syntax != null) {
+            // 使用 HashCode 避免路径过长超过 Key 长度限制，虽然有极低概率碰撞，但对于UI偏好是可以接受的
+            String key = FILE_SYNTAX_PREFIX + filePath.hashCode();
+            prefs.put(key, syntax);
+        }
+    }
+
+    /**
+     * 加载特定文件的语法类型偏好
+     * @param filePath 文件的绝对路径
+     * @return 语法类型后缀，如果没有保存则返回 null
+     */
+    public String loadFileSyntax(String filePath) {
+        if (filePath != null) {
+            String key = FILE_SYNTAX_PREFIX + filePath.hashCode();
+            return prefs.get(key, null);
         }
         return null;
     }

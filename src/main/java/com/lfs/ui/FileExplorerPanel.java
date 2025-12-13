@@ -42,7 +42,6 @@ public class FileExplorerPanel extends JPanel {
     private JTabbedPane tabbedPane;
     private JPanel cloudPanel;
 
-    // Cloud components
     private JTree cloudFileTree;
     private DefaultTreeModel cloudTreeModel;
     private DefaultMutableTreeNode cloudRootNode;
@@ -67,7 +66,6 @@ public class FileExplorerPanel extends JPanel {
     }
 
     private void initUI() {
-        // 导航工具栏
         JToolBar toolBar = new JToolBar();
         toolBar.setFloatable(false);
         toolBar.setLayout(new BorderLayout());
@@ -90,10 +88,8 @@ public class FileExplorerPanel extends JPanel {
 
         add(toolBar, BorderLayout.NORTH);
 
-        // --- Create Tabbed Pane ---
         tabbedPane = new JTabbedPane();
 
-        // --- Local Panel ---
         JPanel localPanel = new JPanel(new BorderLayout());
         fileTree.setRootVisible(false);
         fileTree.setShowsRootHandles(true);
@@ -102,14 +98,12 @@ public class FileExplorerPanel extends JPanel {
         JScrollPane scrollPane = new JScrollPane(fileTree);
         localPanel.add(scrollPane, BorderLayout.CENTER);
 
-        // --- Cloud Panel ---
         cloudPanel = new JPanel(new BorderLayout());
-        // 根节点，不显示，只作为容器
         cloudRootNode = new DefaultMutableTreeNode("云端文件");
         cloudTreeModel = new DefaultTreeModel(cloudRootNode);
         cloudFileTree = new JTree(cloudTreeModel);
         cloudFileTree.setCellRenderer(new CloudFileTreeCellRenderer());
-        cloudFileTree.setRootVisible(false); // 隐藏根节点
+        cloudFileTree.setRootVisible(false);
         cloudFileTree.setShowsRootHandles(true);
         cloudFileTree.setDragEnabled(true);
         cloudFileTree.setTransferHandler(new CloudTreeTransferHandler(this.controller));
@@ -120,7 +114,6 @@ public class FileExplorerPanel extends JPanel {
         tabbedPane.addTab("本地", localPanel);
         tabbedPane.addTab("云端", cloudPanel);
 
-        // Disable cloud tab initially
         tabbedPane.setEnabledAt(1, false);
         cloudPanel.removeAll();
         cloudPanel.add(new JLabel("请先登录", SwingConstants.CENTER), BorderLayout.CENTER);
@@ -172,42 +165,33 @@ public class FileExplorerPanel extends JPanel {
         cloudFileTree.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                // 双击事件
                 if (e.getClickCount() == 2) {
                     TreePath path = cloudFileTree.getPathForLocation(e.getX(), e.getY());
                     if (path != null) {
                         DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
                         Object userObject = node.getUserObject();
-                        // 检查节点是否为文件
                         if (userObject instanceof ContentResponse) {
                             ContentResponse fileInfo = (ContentResponse) userObject;
 
-                            // 设置等待光标
                             setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 
-                            // 使用SwingWorker在后台线程下载文件内容，避免UI冻结
                             new SwingWorker<String, Void>() {
                                 @Override
                                 protected String doInBackground() {
-                                    // 调用服务层方法下载文件
                                     return contentService.downloadContent(fileInfo.getId());
                                 }
 
                                 @Override
                                 protected void done() {
                                     try {
-                                        // 获取下载的内容
                                         String content = get();
                                         if (content != null) {
-                                            // 通知控制器打开新标签页，并传递完整的文件信息
                                             controller.onCloudFileSelected(fileInfo, content);
                                         }
                                     } catch (Exception ex) {
-                                        // 异常处理
                                         NotificationUtil.showErrorDialog(FileExplorerPanel.this, "加载云端文件失败: " + ex.getMessage());
                                         ex.printStackTrace();
                                     } finally {
-                                        // 恢复默认光标
                                         setCursor(Cursor.getDefaultCursor());
                                     }
                                 }
@@ -235,7 +219,6 @@ public class FileExplorerPanel extends JPanel {
         fileTree.addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
-                // 对于 macOS，检查 Command 键；对于其他系统，检查 Control 键
                 boolean isCopy = (e.getKeyCode() == KeyEvent.VK_C) && ((e.getModifiersEx() & Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx()) != 0);
                 boolean isPaste = (e.getKeyCode() == KeyEvent.VK_V) && ((e.getModifiersEx() & Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx()) != 0);
 
@@ -271,11 +254,9 @@ public class FileExplorerPanel extends JPanel {
         TreePath path = fileTree.getPathForLocation(e.getX(), e.getY());
 
         if (path == null) {
-            // 背景点击
             JPopupMenu popupMenu = createBackgroundPopupMenu();
             popupMenu.show(e.getComponent(), e.getX(), e.getY());
         } else {
-            // 项目点击
             fileTree.setSelectionPath(path);
             DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
             File selectedFile = (File) node.getUserObject();
@@ -461,7 +442,7 @@ public class FileExplorerPanel extends JPanel {
 
     private void refresh() {
         File currentDir = new File(currentPathLabel.getText().trim());
-        navigateTo(currentDir, true); // 强制刷新
+        navigateTo(currentDir, true);
     }
 
     public void lazyLoadInitialDirectory(Runnable onFinished) {
@@ -496,7 +477,6 @@ public class FileExplorerPanel extends JPanel {
                     currentPathLabel.setText(" " + initialDir.getAbsolutePath());
                     prefsService.saveFileExplorerLastDirectory(initialDir);
 
-                    // Update history for the initial load
                     history.clear();
                     history.add(initialDir);
                     historyIndex = 0;
@@ -552,7 +532,6 @@ public class FileExplorerPanel extends JPanel {
                     prefsService.saveFileExplorerLastDirectory(directory);
 
                     if (!isRefresh) {
-                        // 更新历史记录
                         while (history.size() > historyIndex + 1) {
                             history.remove(history.size() - 1);
                         }
@@ -573,7 +552,7 @@ public class FileExplorerPanel extends JPanel {
         if (historyIndex > 0) {
             historyIndex--;
             File dir = history.get(historyIndex);
-            navigateTo(dir, true); // 无痕浏览
+            navigateTo(dir, true);
         }
     }
 
@@ -581,7 +560,7 @@ public class FileExplorerPanel extends JPanel {
         if (historyIndex < history.size() - 1) {
             historyIndex++;
             File dir = history.get(historyIndex);
-            navigateTo(dir, true); // 无痕浏览
+            navigateTo(dir, true);
         }
     }
 
@@ -634,13 +613,11 @@ public class FileExplorerPanel extends JPanel {
             @Override
             protected void done() {
                 try {
-                    cloudApiRoot = get(); // Store the root
+                    cloudApiRoot = get();
                     cloudRootNode.removeAllChildren();
                     if (cloudApiRoot != null) {
-                        // The API's root is the single visible node in our tree
                         DefaultMutableTreeNode rootTreeNode = new DefaultMutableTreeNode(cloudApiRoot);
                         cloudRootNode.add(rootTreeNode);
-                        // Build out the children from this root
                         buildCloudTree(rootTreeNode, cloudApiRoot);
                     }
                     cloudTreeModel.reload(cloudRootNode);
@@ -655,19 +632,17 @@ public class FileExplorerPanel extends JPanel {
     }
 
     private void buildCloudTree(DefaultMutableTreeNode parent, DirTreeResponse dir) {
-        // Add files first
         if (dir.getContents() != null && !dir.getContents().isEmpty()) {
             for (ContentResponse content : dir.getContents()) {
                 parent.add(new DefaultMutableTreeNode(content));
             }
         }
 
-        // Then add subdirectories
         if (dir.getChildren() != null && !dir.getChildren().isEmpty()) {
             for (DirTreeResponse child : dir.getChildren()) {
                 DefaultMutableTreeNode childNode = new DefaultMutableTreeNode(child);
                 parent.add(childNode);
-                buildCloudTree(childNode, child); // Recurse
+                buildCloudTree(childNode, child);
             }
         }
     }
@@ -721,11 +696,9 @@ public class FileExplorerPanel extends JPanel {
         TreePath path = cloudFileTree.getPathForLocation(e.getX(), e.getY());
 
         if (path == null) {
-            // Background click
             JPopupMenu popupMenu = createCloudBackgroundPopupMenu();
             popupMenu.show(e.getComponent(), e.getX(), e.getY());
         } else {
-            // Item click
             cloudFileTree.setSelectionPath(path);
             DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
             Object userObject = node.getUserObject();
@@ -916,17 +889,11 @@ public class FileExplorerPanel extends JPanel {
         }
     }
 
-    /**
-     * 向云文件树中添加新的文档节点
-     *
-     * @param newContent 新创建的文档信息
-     */
     public void addCloudContentNode(ContentResponse newContent) {
         if (newContent == null || newContent.getDirId() == null) {
-            return; // 无效内容或无法确定父目录
+            return;
         }
 
-        DefaultMutableTreeNode apiRootNode = (DefaultMutableTreeNode) cloudRootNode.getFirstChild();
         DefaultMutableTreeNode parentNode = findNodeById(newContent.getDirId());
 
         if (parentNode != null) {
@@ -938,20 +905,15 @@ public class FileExplorerPanel extends JPanel {
         }
     }
 
-    // 忽略类型的ID比较
     private boolean isIdMatch(Long id1, Object id2Obj) {
         if (id1 == null || id2Obj == null) return false;
         String s1 = String.valueOf(id1);
         String s2 = String.valueOf(id2Obj);
-        // 移除可能的小数点（JSON number sometimes becomes double）
         if (s1.endsWith(".0")) s1 = s1.substring(0, s1.length() - 2);
         if (s2.endsWith(".0")) s2 = s2.substring(0, s2.length() - 2);
         return s1.equals(s2);
     }
 
-    /**
-     * 强健壮性的节点查找：BFS遍历全树，不依赖层级假设，支持模糊类型匹配
-     */
     private DefaultMutableTreeNode findNodeById(Long id) {
         if (id == null) return null;
 
@@ -979,9 +941,13 @@ public class FileExplorerPanel extends JPanel {
         DefaultMutableTreeNode nodeToUpdate = findNodeById(updatedContent.getId());
 
         if (nodeToUpdate != null) {
-            ContentResponse oldContent = (ContentResponse) nodeToUpdate.getUserObject();
-            oldContent.setTitle(updatedContent.getTitle());
-            cloudTreeModel.nodeChanged(nodeToUpdate);
+            Object obj = nodeToUpdate.getUserObject();
+            if (obj instanceof ContentResponse) {
+                ContentResponse oldContent = (ContentResponse) obj;
+                oldContent.setTitle(updatedContent.getTitle());
+                oldContent.setType(updatedContent.getType());
+                cloudTreeModel.nodeChanged(nodeToUpdate);
+            }
         } else {
             loadCloudDirectory();
         }
@@ -1018,29 +984,21 @@ public class FileExplorerPanel extends JPanel {
         }
     }
 
-    /**
-     * 局部移动节点
-     */
     public void moveCloudNodeLocal(DefaultMutableTreeNode nodeToMoveStub, DefaultMutableTreeNode newParentStub, Object updatedUserObject) {
         SwingUtilities.invokeLater(() -> {
             try {
                 if (cloudRootNode.getChildCount() == 0) return;
 
-                // 1. 获取源节点 ID
                 Long moveId = null;
                 Object stubObj = nodeToMoveStub.getUserObject();
                 if (stubObj instanceof ContentResponse) moveId = ((ContentResponse)stubObj).getId();
                 else if (stubObj instanceof DirTreeResponse) moveId = ((DirTreeResponse)stubObj).getId();
 
-                // 2. 查找【真实的源节点】
                 DefaultMutableTreeNode liveOldNode = findNodeById(moveId);
 
-                // 3. 查找【真实的目标父节点】
                 DefaultMutableTreeNode liveNewParent = null;
                 Object parentObj = newParentStub.getUserObject();
 
-                // 特殊处理：如果目标是根节点容器或者 API 根节点
-                // 如果用户拖拽到 JTree 的空白区域或根节点，DropLocation 会指向 Root
                 if (newParentStub == cloudRootNode ||
                         (cloudRootNode.getFirstChild() != null && newParentStub == cloudRootNode.getFirstChild())) {
                     liveNewParent = (DefaultMutableTreeNode) cloudRootNode.getFirstChild();
@@ -1049,7 +1007,6 @@ public class FileExplorerPanel extends JPanel {
                     liveNewParent = findNodeById(parentId);
                 }
 
-                // 4. 验证查找结果
                 if (liveOldNode == null) {
                     NotificationUtil.showErrorDialog(this, "局部更新失败：无法在树中找到被移动的节点 (ID=" + moveId + ")");
                     loadCloudDirectory();
@@ -1061,26 +1018,18 @@ public class FileExplorerPanel extends JPanel {
                     return;
                 }
 
-                // 5. 环路检测 (不能把父节点拖到子节点里)
                 if (liveOldNode == liveNewParent || liveOldNode.isNodeDescendant(liveNewParent)) {
                     return;
                 }
 
-                // 6. 执行原子化模型操作
-                // 直接移动 liveOldNode，这样它的 children 会自动跟随，不需要手动搬运
                 cloudTreeModel.removeNodeFromParent(liveOldNode);
 
-                // 更新 UserObject (后端返回了新的 DirTreeResponse，含新 parentId)
                 liveOldNode.setUserObject(updatedUserObject);
 
-                // 插入到新位置
                 cloudTreeModel.insertNodeInto(liveOldNode, liveNewParent, liveNewParent.getChildCount());
 
-                // 7. reload 无参调用会通知整个 Tree 的结构发生了变化
                 cloudTreeModel.reload();
 
-                // 8. 恢复选中并滚动到可视区域
-                // reload 后路径对象失效，需重新构建
                 TreePath newPath = new TreePath(cloudTreeModel.getPathToRoot(liveOldNode));
                 cloudFileTree.scrollPathToVisible(newPath);
                 cloudFileTree.setSelectionPath(newPath);
@@ -1088,7 +1037,7 @@ public class FileExplorerPanel extends JPanel {
             } catch (Exception e) {
                 e.printStackTrace();
                 NotificationUtil.showErrorDialog(this, "局部更新发生异常: " + e.getMessage());
-                loadCloudDirectory(); // 终极兜底
+                loadCloudDirectory();
             }
         });
     }
