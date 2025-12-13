@@ -27,7 +27,8 @@ public class CodeAssistant {
 
     public static void main(String[] args) {
         // 尝试连接到现有实例
-        try (Socket clientSocket = new Socket(InetAddress.getLocalHost(), PORT)) {
+        // 修复: 使用 getLoopbackAddress() 代替 getLocalHost() 以避免 Windows 下的主机名解析延迟
+        try (Socket clientSocket = new Socket(InetAddress.getLoopbackAddress(), PORT)) {
             // 如果连接成功，说明已有实例在运行
             log.info("检测到正在运行的实例，传递参数并退出。");
             try (PrintWriter out = new PrintWriter(new OutputStreamWriter(clientSocket.getOutputStream()), true)) {
@@ -101,16 +102,17 @@ public class CodeAssistant {
 
     private static void startSingleInstanceServer(AtomicReference<MainFrame> mainFrameRef) {
         new Thread(() -> {
-            try (ServerSocket serverSocket = new ServerSocket(PORT, 50, InetAddress.getLocalHost())) {
+            // 同样在服务端绑定时使用 getLoopbackAddress()
+            try (ServerSocket serverSocket = new ServerSocket(PORT, 50, InetAddress.getLoopbackAddress())) {
                 System.out.println("单例服务器已启动，正在监听端口 " + PORT);
                 while (!Thread.currentThread().isInterrupted()) {
                     try (Socket clientSocket = serverSocket.accept();
                          BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()))) {
-                        
+
                         // 读取工作目录和文件路径
                         String workingDir = in.readLine();
                         String filePath = in.readLine();
-                        
+
                         System.out.println("从新实例收到文件路径: " + filePath);
 
                         SwingUtilities.invokeLater(() -> {
@@ -120,7 +122,7 @@ public class CodeAssistant {
                                 frame.setExtendedState(JFrame.NORMAL);
                                 frame.toFront();
                                 frame.requestFocus();
-                                
+
                                 if (filePath != null && !filePath.isEmpty()) {
                                     File fileToOpen = new File(filePath);
                                     // 如果路径不是绝对路径，则结合工作目录

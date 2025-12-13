@@ -619,11 +619,18 @@ public class FileExplorerPanel extends JPanel {
                         DefaultMutableTreeNode rootTreeNode = new DefaultMutableTreeNode(cloudApiRoot);
                         cloudRootNode.add(rootTreeNode);
                         buildCloudTree(rootTreeNode, cloudApiRoot);
+                        cloudTreeModel.reload(cloudRootNode);
+                    } else {
+                        // 如果获取失败（cloudApiRoot 为 null），禁用云端Tab并切回本地
+                        setCloudTabEnabled(false);
+                        switchToLocalTab();
                     }
-                    cloudTreeModel.reload(cloudRootNode);
                 } catch (Exception e) {
                     NotificationUtil.showErrorDialog(FileExplorerPanel.this, "加载云端目录失败: " + e.getMessage());
                     e.printStackTrace();
+                    // 发生异常时也禁用Tab并切回
+                    setCloudTabEnabled(false);
+                    switchToLocalTab();
                 } finally {
                     setCursor(Cursor.getDefaultCursor());
                 }
