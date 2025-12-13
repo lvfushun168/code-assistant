@@ -1,4 +1,5 @@
 # 代码协作助手 (Code Assistant)
+[后端地址](https://github.com/lvfushun168/code-assistant-backend)
 
 一款专为开发者设计的现代化、轻量级桌面应用，使用 Java Swing 构建。它不仅是一个高效、简洁的代码阅读和编辑环境，还集成了用户账户、云端同步和多种实用的开发工具。
 
