@@ -3,11 +3,7 @@ package com.lfs.service;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.TypeReference;
 import com.lfs.config.AppConfig;
-import com.lfs.domain.BackendResponse;
-import com.lfs.domain.CaptchaResponse;
-import com.lfs.domain.KeyPackageResponse;
-import com.lfs.domain.LoginRequest;
-import com.lfs.domain.User;
+import com.lfs.domain.*;
 import lombok.extern.slf4j.Slf4j;
 import cn.hutool.http.HttpResponse;
 import cn.hutool.crypto.digest.DigestUtil;
@@ -107,6 +103,35 @@ public class AccountService {
         } catch (Exception e) {
             log.error("登录请求失败", e);
             BackendResponse<String> errorResponse = new BackendResponse<>();
+            errorResponse.setCode(500);
+            errorResponse.setMessage(e.getMessage());
+            return errorResponse;
+        }
+    }
+
+    /**
+     * 修改密码
+     * @param oldPassword 旧密码
+     * @param newPassword 新密码
+     * @return 响应结果
+     */
+    public BackendResponse<Object> changePassword(String oldPassword, String newPassword) {
+        try {
+            ChangePasswordRequest request = new ChangePasswordRequest();
+            request.setOldPassword(DigestUtil.sha256Hex(oldPassword));
+            request.setNewPassword(DigestUtil.sha256Hex(newPassword));
+
+            HttpResponse response = HttpClientService.createPostRequest(AppConfig.BASE_URL + AppConfig.CHANGE_PASSWORD_URL, true)
+                    .body(JSON.toJSONString(request))
+                    .contentType("application/json")
+                    .execute();
+
+            String responseBody = response.body();
+            return JSON.parseObject(responseBody, new TypeReference<BackendResponse<Object>>() {});
+
+        } catch (Exception e) {
+            log.error("修改密码请求失败", e);
+            BackendResponse<Object> errorResponse = new BackendResponse<>();
             errorResponse.setCode(500);
             errorResponse.setMessage(e.getMessage());
             return errorResponse;

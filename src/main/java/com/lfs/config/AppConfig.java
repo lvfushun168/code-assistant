@@ -56,6 +56,10 @@ public class AppConfig {
      */
     public static final String LOGIN_URL = API_PREFIX + "/account/login";
     /**
+     * 修改密码
+     */
+    public static final String CHANGE_PASSWORD_URL = API_PREFIX + "/account/change-password";
+    /**
      * 验证码
      */
     public static final String CAPTCHA_URL = API_PREFIX + "/captcha/generate";

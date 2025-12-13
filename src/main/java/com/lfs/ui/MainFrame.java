@@ -28,6 +28,7 @@ public class MainFrame extends JFrame {
     private JMenuItem loginMenuItem;
     private JMenuItem logoutMenuItem;
     private JMenuItem signupMenuItem;
+    private JMenuItem changePasswordMenuItem;
     private JCheckBoxMenuItem lineWrapMenuItem;
 
     public MainFrame() {
@@ -41,6 +42,7 @@ public class MainFrame extends JFrame {
         loginMenuItem.setVisible(!isLoggedIn);
         logoutMenuItem.setVisible(isLoggedIn);
         signupMenuItem.setVisible(!isLoggedIn);
+        changePasswordMenuItem.setVisible(isLoggedIn); // 仅在登录时显示
         // 根据登录状态更新文件浏览器的云标签
         if (fileExplorerPanel != null) {
             fileExplorerPanel.setCloudTabEnabled(isLoggedIn);
@@ -256,6 +258,15 @@ public class MainFrame extends JFrame {
             loginDialog.setVisible(true);
         });
         accountMenu.add(loginMenuItem);
+
+        // 新增修改密码菜单项
+        changePasswordMenuItem = new JMenuItem("修改密码...");
+        changePasswordMenuItem.addActionListener(e -> {
+            ChangePasswordDialog dialog = new ChangePasswordDialog(this);
+            dialog.setVisible(true);
+        });
+        accountMenu.add(changePasswordMenuItem);
+
         logoutMenuItem = new JMenuItem("登出...");
         logoutMenuItem.addActionListener(e -> {
             int response = JOptionPane.showConfirmDialog(this, "您确定要登出吗？", "确认", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
