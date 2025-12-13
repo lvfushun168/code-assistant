@@ -447,8 +447,7 @@ public class MainFrameController {
                     ContentResponse response = get();
                     if (response != null) {
                         NotificationUtil.showToast(mainFrame, "保存成功！");
-                        // 关键修复：保存成功后，使用服务器返回的最新元数据（包含更新后的type）
-                        // 去刷新文件浏览器左侧树中的节点信息
+                        // 保存成功后，使用服务器返回的最新元数据（包含更新后的type）去刷新文件浏览器左侧树中的节点信息
                         mainFrame.getFileExplorerPanel().updateCloudContentNode(response);
                     }
                 } catch (Exception e) {
