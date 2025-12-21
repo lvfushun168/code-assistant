@@ -131,6 +131,16 @@ public class EditorPanel extends JPanel {
             syntaxMenu.add(syntaxItem);
         }
 
+        JMenuItem compressWhitespaceItem = new JMenuItem("压缩空白");
+        compressWhitespaceItem.addActionListener(e -> {
+            String selectedText = rightTextArea.getSelectedText();
+            if (selectedText != null && !selectedText.isEmpty()) {
+                String compressedText = selectedText.replaceAll("\\s+", "");
+                rightTextArea.replaceSelection(compressedText);
+            }
+        });
+        popupMenu.add(compressWhitespaceItem);
+
         popupMenu.addSeparator();
         popupMenu.add(syntaxMenu);
 
