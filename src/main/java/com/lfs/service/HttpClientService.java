@@ -95,6 +95,17 @@ public class HttpClientService {
         configureRequest(request);
         return applyAuth(request, carryToken);
     }
+
+    /**
+     * 检查响应状态，如果是401则抛出TokenExpiredException
+     * 此方法需要在execute()之后调用
+     */
+    public static void checkResponseStatus(cn.hutool.http.HttpResponse response) {
+        int status = response.getStatus();
+        if (status == 401) {
+            throw new TokenExpiredException("登陆已过期，请重新登录");
+        }
+    }
 }
 
 

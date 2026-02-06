@@ -35,6 +35,17 @@ public class MainFrame extends JFrame {
         this.preferencesService = new UserPreferencesService();
         initUI();
         updateAccountMenu();
+        // 注册Token过期监听器
+        com.lfs.service.TokenManager.addTokenExpiredListener(this::handleTokenExpired);
+    }
+
+    private void handleTokenExpired() {
+        // 更新账户菜单状态，显示为未登录状态
+        updateAccountMenu();
+        // 切换回本地选项卡
+        if (fileExplorerPanel != null) {
+            fileExplorerPanel.switchToLocalTab();
+        }
     }
 
     public void updateAccountMenu() {

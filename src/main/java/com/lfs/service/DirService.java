@@ -22,7 +22,9 @@ public class DirService {
     public DirTreeResponse getDirTree() {
         String url = AppConfig.BASE_URL + AppConfig.DIR_TREE_URL;
         try {
-            String responseBody = HttpClientService.createGetRequest(url, true).execute().body();
+            cn.hutool.http.HttpResponse response = HttpClientService.createGetRequest(url, true).execute();
+            HttpClientService.checkResponseStatus(response);
+            String responseBody = response.body();
             if (responseBody == null) {
                 NotificationUtil.showErrorDialog(null, "获取云端目录失败，响应为空");
                 return null;
@@ -40,6 +42,10 @@ public class DirService {
                 NotificationUtil.showErrorDialog(null, "获取云端目录失败: " + errorMessage);
                 return null;
             }
+        } catch (TokenExpiredException e) {
+            TokenManager.notifyTokenExpired();
+            NotificationUtil.showErrorDialog(null, e.getMessage());
+            return null;
         } catch (Exception e) {
             String message = e.getMessage();
             if (e.getMessage().contains("SSLHandshakeException")) {
@@ -60,6 +66,8 @@ public class DirService {
                     .contentType("application/json")
                     .execute();
 
+            HttpClientService.checkResponseStatus(response);
+
             TypeReference<BackendResponse<DirTreeResponse>> typeRef = new TypeReference<>() {};
             BackendResponse<DirTreeResponse> apiResponse = JSONUtil.toBean(response.body(), typeRef, false);
 
@@ -68,6 +76,10 @@ public class DirService {
                 return null;
             }
             return apiResponse.getData();
+        } catch (TokenExpiredException e) {
+            TokenManager.notifyTokenExpired();
+            NotificationUtil.showErrorDialog(null, e.getMessage());
+            return null;
         } catch (Exception e) {
             NotificationUtil.showErrorDialog(null, "创建目录时发生异常: " + e.getMessage());
             e.printStackTrace();
@@ -87,6 +99,8 @@ public class DirService {
                     .contentType("application/json")
                     .execute();
 
+            HttpClientService.checkResponseStatus(response);
+
             TypeReference<BackendResponse<Long>> typeRef = new TypeReference<>() {};
             BackendResponse<Long> apiResponse = JSONUtil.toBean(response.body(), typeRef, false);
 
@@ -95,6 +109,10 @@ public class DirService {
             }
             // 无论成功与否都返回 response 对象，让调用者判断 code
             return apiResponse;
+        } catch (TokenExpiredException e) {
+            TokenManager.notifyTokenExpired();
+            NotificationUtil.showErrorDialog(null, e.getMessage());
+            return null;
         } catch (Exception e) {
             NotificationUtil.showErrorDialog(null, "更新目录时发生异常: " + e.getMessage());
             e.printStackTrace();
@@ -106,12 +124,17 @@ public class DirService {
         String url = AppConfig.BASE_URL + AppConfig.DIR_URL + "/" + id;
         try {
             HttpResponse response = HttpClientService.createDeleteRequest(url, true).execute();
+            HttpClientService.checkResponseStatus(response);
             BackendResponse<?> apiResponse = JSONUtil.toBean(response.body(), BackendResponse.class);
             if (apiResponse.getCode() != 200) {
                 NotificationUtil.showErrorDialog(null, "删除失败: " + apiResponse.getMessage());
                 return false;
             }
             return true;
+        } catch (TokenExpiredException e) {
+            TokenManager.notifyTokenExpired();
+            NotificationUtil.showErrorDialog(null, e.getMessage());
+            return false;
         } catch (Exception e) {
             NotificationUtil.showErrorDialog(null, "删除目录时发生异常: " + e.getMessage());
             e.printStackTrace();

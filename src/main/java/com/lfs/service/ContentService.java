@@ -24,7 +24,9 @@ public class ContentService {
     public String downloadContent(Long id) {
         String url = AppConfig.BASE_URL + AppConfig.CONTENT_DOWNLOAD_URL + "/" + id;
         try {
-            return HttpClientService.createGetRequest(url, true).execute().body();
+            HttpResponse response = HttpClientService.createGetRequest(url, true).execute();
+            HttpClientService.checkResponseStatus(response);
+            return response.body();
         } catch (IORuntimeException e) {
             if (e.getCause() instanceof ConnectException) {
                 NotificationUtil.showErrorDialog(null, "连接后端服务失败，请确认服务是否已启动。");
@@ -32,6 +34,10 @@ public class ContentService {
                 NotificationUtil.showErrorDialog(null, "下载文件时发生网络异常: " + e.getMessage());
             }
             e.printStackTrace();
+            return null;
+        } catch (TokenExpiredException e) {
+            TokenManager.notifyTokenExpired();
+            NotificationUtil.showErrorDialog(null, e.getMessage());
             return null;
         } catch (Exception e) {
             NotificationUtil.showErrorDialog(null, "下载文件时发生未知异常: " + e.getMessage());
@@ -73,6 +79,8 @@ public class ContentService {
                     .form("file", fileResource)
                     .execute();
 
+            HttpClientService.checkResponseStatus(response);
+
             String body = response.body();
             ApiResponse apiResponse = JSONUtil.toBean(body, ApiResponse.class);
 
@@ -99,6 +107,10 @@ public class ContentService {
                 NotificationUtil.showErrorDialog(null, "创建文件失败: " + apiResponse.getMessage());
                 return null;
             }
+        } catch (TokenExpiredException e) {
+            TokenManager.notifyTokenExpired();
+            NotificationUtil.showErrorDialog(null, e.getMessage());
+            return null;
         } catch (Exception e) {
             NotificationUtil.showErrorDialog(null, "创建文件时发生异常: " + e.getMessage());
             e.printStackTrace();
@@ -145,6 +157,8 @@ public class ContentService {
             // 3. 发送multipart/form-data请求
             HttpResponse response = request.execute();
 
+            HttpClientService.checkResponseStatus(response);
+
             String body = response.body();
             ApiResponse apiResponse = JSONUtil.toBean(body, ApiResponse.class);
 
@@ -160,6 +174,10 @@ public class ContentService {
                 NotificationUtil.showErrorDialog(null, apiResponse.getMessage());
                 return null;
             }
+        } catch (TokenExpiredException e) {
+            TokenManager.notifyTokenExpired();
+            NotificationUtil.showErrorDialog(null, e.getMessage());
+            return null;
         } catch (Exception e) {
             NotificationUtil.showErrorDialog(null, "更新文件时发生异常: " + e.getMessage());
             e.printStackTrace();
@@ -176,6 +194,7 @@ public class ContentService {
         String url = AppConfig.BASE_URL + AppConfig.CONTENT_URL + "/" + id;
         try {
             HttpResponse response = HttpClientService.createDeleteRequest(url, true).execute();
+            HttpClientService.checkResponseStatus(response);
             String body = response.body();
             ApiResponse apiResponse = JSONUtil.toBean(body, ApiResponse.class);
 
@@ -183,6 +202,10 @@ public class ContentService {
                 NotificationUtil.showErrorDialog(null, "删除文件失败: " + apiResponse.getMessage());
             }
             return apiResponse.isSuccess();
+        } catch (TokenExpiredException e) {
+            TokenManager.notifyTokenExpired();
+            NotificationUtil.showErrorDialog(null, e.getMessage());
+            return false;
         } catch (Exception e) {
             NotificationUtil.showErrorDialog(null, "删除文件时发生异常: " + e.getMessage());
             e.printStackTrace();
