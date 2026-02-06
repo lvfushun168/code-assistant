@@ -37,7 +37,7 @@ public class ContentService {
             return null;
         } catch (TokenExpiredException e) {
             TokenManager.notifyTokenExpired();
-            NotificationUtil.showErrorDialog(null, e.getMessage());
+            NotificationUtil.showToast(null, e.getMessage());
             return null;
         } catch (Exception e) {
             NotificationUtil.showErrorDialog(null, "下载文件时发生未知异常: " + e.getMessage());
@@ -109,7 +109,7 @@ public class ContentService {
             }
         } catch (TokenExpiredException e) {
             TokenManager.notifyTokenExpired();
-            NotificationUtil.showErrorDialog(null, e.getMessage());
+            NotificationUtil.showToast(null, e.getMessage());
             return null;
         } catch (Exception e) {
             NotificationUtil.showErrorDialog(null, "创建文件时发生异常: " + e.getMessage());
@@ -176,7 +176,7 @@ public class ContentService {
             }
         } catch (TokenExpiredException e) {
             TokenManager.notifyTokenExpired();
-            NotificationUtil.showErrorDialog(null, e.getMessage());
+            NotificationUtil.showToast(null, e.getMessage());
             return null;
         } catch (Exception e) {
             NotificationUtil.showErrorDialog(null, "更新文件时发生异常: " + e.getMessage());
@@ -204,7 +204,7 @@ public class ContentService {
             return apiResponse.isSuccess();
         } catch (TokenExpiredException e) {
             TokenManager.notifyTokenExpired();
-            NotificationUtil.showErrorDialog(null, e.getMessage());
+            NotificationUtil.showToast(null, e.getMessage());
             return false;
         } catch (Exception e) {
             NotificationUtil.showErrorDialog(null, "删除文件时发生异常: " + e.getMessage());

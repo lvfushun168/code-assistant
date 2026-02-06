@@ -44,7 +44,7 @@ public class DirService {
             }
         } catch (TokenExpiredException e) {
             TokenManager.notifyTokenExpired();
-            NotificationUtil.showErrorDialog(null, e.getMessage());
+            NotificationUtil.showToast(null, e.getMessage());
             return null;
         } catch (Exception e) {
             String message = e.getMessage();
@@ -78,7 +78,7 @@ public class DirService {
             return apiResponse.getData();
         } catch (TokenExpiredException e) {
             TokenManager.notifyTokenExpired();
-            NotificationUtil.showErrorDialog(null, e.getMessage());
+            NotificationUtil.showToast(null, e.getMessage());
             return null;
         } catch (Exception e) {
             NotificationUtil.showErrorDialog(null, "创建目录时发生异常: " + e.getMessage());
@@ -111,7 +111,7 @@ public class DirService {
             return apiResponse;
         } catch (TokenExpiredException e) {
             TokenManager.notifyTokenExpired();
-            NotificationUtil.showErrorDialog(null, e.getMessage());
+            NotificationUtil.showToast(null, e.getMessage());
             return null;
         } catch (Exception e) {
             NotificationUtil.showErrorDialog(null, "更新目录时发生异常: " + e.getMessage());
@@ -133,7 +133,7 @@ public class DirService {
             return true;
         } catch (TokenExpiredException e) {
             TokenManager.notifyTokenExpired();
-            NotificationUtil.showErrorDialog(null, e.getMessage());
+            NotificationUtil.showToast(null, e.getMessage());
             return false;
         } catch (Exception e) {
             NotificationUtil.showErrorDialog(null, "删除目录时发生异常: " + e.getMessage());
