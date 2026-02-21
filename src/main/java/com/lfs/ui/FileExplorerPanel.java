@@ -1,5 +1,6 @@
 package com.lfs.ui;
 
+import com.lfs.config.AppConfig;
 import com.lfs.domain.ContentResponse;
 import com.lfs.domain.DirTreeResponse;
 import com.lfs.service.*;
@@ -47,6 +48,7 @@ public class FileExplorerPanel extends JPanel {
     private DefaultMutableTreeNode cloudRootNode;
     private DirService dirService;
     private ContentService contentService;
+    private CloudFsService cloudFsService;
     private DirTreeResponse cloudApiRoot;
 
 
@@ -57,6 +59,7 @@ public class FileExplorerPanel extends JPanel {
         this.fileProcessorService = new FileProcessorService();
         this.dirService = new DirService();
         this.contentService = new ContentService();
+        this.cloudFsService = new CloudFsService();
 
         rootNode = new DefaultMutableTreeNode();
         treeModel = new DefaultTreeModel(rootNode);
@@ -172,6 +175,19 @@ public class FileExplorerPanel extends JPanel {
                         Object userObject = node.getUserObject();
                         if (userObject instanceof ContentResponse) {
                             ContentResponse fileInfo = (ContentResponse) userObject;
+
+                            // 检查文件格式是否支持预览
+                            String fileName = fileInfo.getTitle();
+                            String extension = "";
+                            int dotIndex = fileName.lastIndexOf('.');
+                            if (dotIndex > 0 && dotIndex < fileName.length() - 1) {
+                                extension = fileName.substring(dotIndex + 1);
+                            }
+                            
+                            if (!AppConfig.ALLOWED_EXTENSIONS.contains(fileInfo.getType())) {
+                                NotificationUtil.showToast(FileExplorerPanel.this, "不支持的文件格式: " + extension);
+                                return;
+                            }
 
                             setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 
@@ -761,9 +777,12 @@ public class FileExplorerPanel extends JPanel {
 
     private JPopupMenu createCloudBackgroundPopupMenu() {
         JPopupMenu popupMenu = new JPopupMenu();
+        
+        // 新建文档和目录
         JMenuItem newFileItem = new JMenuItem("新建文档");
         newFileItem.addActionListener(e -> handleNewCloudFile(cloudApiRoot != null ? cloudApiRoot.getId() : null));
         popupMenu.add(newFileItem);
+        
         JMenuItem newDirItem = new JMenuItem("新建目录");
         newDirItem.addActionListener(e -> {
             if (cloudApiRoot == null) {
@@ -801,6 +820,14 @@ public class FileExplorerPanel extends JPanel {
             }
         });
         popupMenu.add(newDirItem);
+        
+        popupMenu.addSeparator();
+        
+        // 上传文件夹
+        JMenuItem uploadFolderItem = new JMenuItem("上传文件夹");
+        uploadFolderItem.addActionListener(e -> handleUploadFolder(cloudApiRoot != null ? cloudApiRoot.getName() : ""));
+        popupMenu.add(uploadFolderItem);
+        
         return popupMenu;
     }
 
@@ -808,9 +835,12 @@ public class FileExplorerPanel extends JPanel {
     private JPopupMenu createCloudDirPopupMenu(DefaultMutableTreeNode node) {
         JPopupMenu popupMenu = new JPopupMenu();
         DirTreeResponse dir = (DirTreeResponse) node.getUserObject();
+        
+        // 新建文档和目录
         JMenuItem newFileItem = new JMenuItem("新建文档");
         newFileItem.addActionListener(e -> handleNewCloudFile(dir.getId()));
         popupMenu.add(newFileItem);
+        
         JMenuItem newDirItem = new JMenuItem("新建目录");
         newDirItem.addActionListener(e -> {
             String dirName = JOptionPane.showInputDialog(this, "请输入新目录名称:", "新建目录", JOptionPane.PLAIN_MESSAGE);
@@ -844,7 +874,22 @@ public class FileExplorerPanel extends JPanel {
         });
 
         popupMenu.add(newDirItem);
+        
         popupMenu.addSeparator();
+        
+        // 上传文件夹到此目录
+        JMenuItem uploadFolderItem = new JMenuItem("上传文件夹");
+        uploadFolderItem.addActionListener(e -> handleUploadFolder(dir.getName()));
+        popupMenu.add(uploadFolderItem);
+        
+        // 下载整个目录
+        JMenuItem downloadFolderItem = new JMenuItem("下载此目录");
+        downloadFolderItem.addActionListener(e -> handleDownloadFolder(dir));
+        popupMenu.add(downloadFolderItem);
+        
+        popupMenu.addSeparator();
+        
+        // 重命名和删除
         JMenuItem renameItem = new JMenuItem("重命名");
         renameItem.addActionListener(e -> {
             String newName = (String) JOptionPane.showInputDialog(this, "请输入新名称:", "重命名", JOptionPane.PLAIN_MESSAGE, null, null, dir.getName());
@@ -893,6 +938,128 @@ public class FileExplorerPanel extends JPanel {
         String title = JOptionPane.showInputDialog(this, "请输入新文档名称", "新建云端文档", JOptionPane.PLAIN_MESSAGE);
         if (title != null && !title.trim().isEmpty()) {
             controller.createAndOpenCloudFile(dirId, title.trim());
+        }
+    }
+
+    /**
+     * 处理上传文件夹到云端
+     * @param cloudPath 云端目标路径（如目录名）
+     */
+    private void handleUploadFolder(String cloudPath) {
+        if (cloudApiRoot == null) {
+            NotificationUtil.showErrorDialog(this, "无法获取根目录信息，请先刷新。");
+            return;
+        }
+        
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+        fileChooser.setDialogTitle("选择要上传的文件夹");
+        
+        int result = fileChooser.showOpenDialog(this);
+        if (result == JFileChooser.APPROVE_OPTION) {
+            File selectedDir = fileChooser.getSelectedFile();
+            
+            LoadingDialog loadingDialog = new LoadingDialog((Frame) SwingUtilities.getWindowAncestor(this));
+            
+            new SwingWorker<Boolean, Void>() {
+                @Override
+                protected Boolean doInBackground() {
+                    try {
+                        // 1. 将文件夹压缩为 ZIP
+                        File tempZipFile = File.createTempFile("upload_", ".zip");
+                        cloudFsService.compressDirectoryToZip(selectedDir, tempZipFile);
+                        
+                        try {
+                            // 2. 上传 ZIP 到云端
+                            boolean success = cloudFsService.uploadZip(tempZipFile, cloudPath, false);
+                            return success;
+                        } finally {
+                            // 3. 删除临时 ZIP 文件
+                            tempZipFile.delete();
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        return false;
+                    }
+                }
+                
+                @Override
+                protected void done() {
+                    loadingDialog.dispose();
+                    try {
+                        if (get()) {
+                            NotificationUtil.showToast(FileExplorerPanel.this, "上传成功！");
+                            loadCloudDirectory(); // 刷新云端目录
+                        } else {
+                            NotificationUtil.showErrorDialog(FileExplorerPanel.this, "上传失败");
+                        }
+                    } catch (Exception e) {
+                        NotificationUtil.showErrorDialog(FileExplorerPanel.this, "上传失败: " + e.getMessage());
+                    }
+                }
+            }.execute();
+            
+            loadingDialog.setVisible(true);
+        }
+    }
+
+    /**
+     * 处理从云端下载文件夹
+     * @param dir 要下载的云端目录
+     */
+    private void handleDownloadFolder(DirTreeResponse dir) {
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+        fileChooser.setDialogTitle("选择保存位置");
+        
+        int result = fileChooser.showSaveDialog(this);
+        if (result == JFileChooser.APPROVE_OPTION) {
+            File selectedDir = fileChooser.getSelectedFile();
+            
+            LoadingDialog loadingDialog = new LoadingDialog((Frame) SwingUtilities.getWindowAncestor(this));
+            
+            new SwingWorker<Boolean, Void>() {
+                @Override
+                protected Boolean doInBackground() {
+                    try {
+                        // 1. 创建临时 ZIP 文件
+                        File tempZipFile = File.createTempFile("download_", ".zip");
+                        
+                        try {
+                            // 2. 从云端下载 ZIP
+                            boolean success = cloudFsService.downloadZip("/" + dir.getName(), tempZipFile);
+                            if (!success) {
+                                return false;
+                            }
+                            
+                            // 3. 解压到目标目录
+                            cloudFsService.extractZipToDirectory(tempZipFile, selectedDir);
+                            return true;
+                        } finally {
+                            tempZipFile.delete();
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        return false;
+                    }
+                }
+                
+                @Override
+                protected void done() {
+                    loadingDialog.dispose();
+                    try {
+                        if (get()) {
+                            NotificationUtil.showToast(FileExplorerPanel.this, "下载成功！");
+                        } else {
+                            NotificationUtil.showErrorDialog(FileExplorerPanel.this, "下载失败");
+                        }
+                    } catch (Exception e) {
+                        NotificationUtil.showErrorDialog(FileExplorerPanel.this, "下载失败: " + e.getMessage());
+                    }
+                }
+            }.execute();
+            
+            loadingDialog.setVisible(true);
         }
     }
 

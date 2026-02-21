@@ -75,6 +75,31 @@ public class AppConfig {
     public static final String CONTENT_URL = API_PREFIX + "/content";
 
     /**
+     * 云端文件检查
+     */
+    public static final String CLOUD_FS_CHECK_URL = API_PREFIX + "/api/fs/check";
+
+    /**
+     * 云端文件上传
+     */
+    public static final String CLOUD_FS_UPLOAD_URL = API_PREFIX + "/api/fs/upload";
+
+    /**
+     * 云端文件下载
+     */
+    public static final String CLOUD_FS_DOWNLOAD_URL = API_PREFIX + "/api/fs/download";
+
+    /**
+     * 云端ZIP上传
+     */
+    public static final String CLOUD_FS_UPLOAD_ZIP_URL = API_PREFIX + "/api/fs/upload-zip";
+
+    /**
+     * 云端ZIP下载
+     */
+    public static final String CLOUD_FS_DOWNLOAD_ZIP_URL = API_PREFIX + "/api/fs/download-zip";
+
+    /**
      * 允许应用程序读取的文件扩展名
      */
     public static final Set<String> ALLOWED_EXTENSIONS = new HashSet<>(Arrays.asList(
