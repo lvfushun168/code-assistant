@@ -30,6 +30,28 @@ public class CloudFsService {
                 + "?destDir=" + cloudPath 
                 + "&override=" + override;
         
+        return uploadZipToUrl(url, localZipFile);
+    }
+
+    /**
+     * 上传 ZIP 文件到云端（通过目录ID）
+     * @param localZipFile 本地 ZIP 文件
+     * @param dirId 云端目标目录ID
+     * @param override 是否覆盖
+     * @return 是否成功
+     */
+    public boolean uploadZipById(File localZipFile, Long dirId, boolean override) {
+        String url = AppConfig.BASE_URL + AppConfig.CLOUD_FS_UPLOAD_ZIP_BY_ID_URL 
+                + "?dirId=" + dirId 
+                + "&override=" + override;
+        
+        return uploadZipToUrl(url, localZipFile);
+    }
+
+    /**
+     * 内部方法：上传 ZIP 到 URL
+     */
+    private boolean uploadZipToUrl(String url, File localZipFile) {
         try {
             HttpResponse response = HttpClientService.createPostRequest(url, true)
                     .form("file", localZipFile)
@@ -64,6 +86,26 @@ public class CloudFsService {
         String url = AppConfig.BASE_URL + AppConfig.CLOUD_FS_DOWNLOAD_ZIP_URL 
                 + "?path=" + cloudPath;
         
+        return downloadZipFromUrl(url, destFile);
+    }
+
+    /**
+     * 从云端下载目录为 ZIP 文件（通过目录ID）
+     * @param dirId 云端目录ID
+     * @param destFile 本地保存路径
+     * @return 是否成功
+     */
+    public boolean downloadZipById(Long dirId, File destFile) {
+        String url = AppConfig.BASE_URL + AppConfig.CLOUD_FS_DOWNLOAD_ZIP_BY_ID_URL 
+                + "?id=" + dirId;
+        
+        return downloadZipFromUrl(url, destFile);
+    }
+
+    /**
+     * 内部方法：从URL下载ZIP文件
+     */
+    private boolean downloadZipFromUrl(String url, File destFile) {
         try {
             HttpResponse response = HttpClientService.createGetRequest(url, true).execute();
             HttpClientService.checkResponseStatus(response);

@@ -95,9 +95,19 @@ public class AppConfig {
     public static final String CLOUD_FS_UPLOAD_ZIP_URL = API_PREFIX + "/api/fs/upload-zip";
 
     /**
+     * 云端ZIP上传（通过ID）
+     */
+    public static final String CLOUD_FS_UPLOAD_ZIP_BY_ID_URL = API_PREFIX + "/api/fs/upload-zip-by-id";
+
+    /**
      * 云端ZIP下载
      */
     public static final String CLOUD_FS_DOWNLOAD_ZIP_URL = API_PREFIX + "/api/fs/download-zip";
+
+    /**
+     * 云端ZIP下载（通过ID）
+     */
+    public static final String CLOUD_FS_DOWNLOAD_ZIP_BY_ID_URL = API_PREFIX + "/api/fs/download-zip-by-id";
 
     /**
      * 允许应用程序读取的文件扩展名

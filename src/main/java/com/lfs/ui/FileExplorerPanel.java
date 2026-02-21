@@ -825,7 +825,7 @@ public class FileExplorerPanel extends JPanel {
         
         // 上传文件夹
         JMenuItem uploadFolderItem = new JMenuItem("上传文件夹");
-        uploadFolderItem.addActionListener(e -> handleUploadFolder(cloudApiRoot != null ? cloudApiRoot.getName() : ""));
+        uploadFolderItem.addActionListener(e -> handleUploadFolder(cloudApiRoot != null ? cloudApiRoot.getId() : null));
         popupMenu.add(uploadFolderItem);
         
         return popupMenu;
@@ -879,7 +879,7 @@ public class FileExplorerPanel extends JPanel {
         
         // 上传文件夹到此目录
         JMenuItem uploadFolderItem = new JMenuItem("上传文件夹");
-        uploadFolderItem.addActionListener(e -> handleUploadFolder(dir.getName()));
+        uploadFolderItem.addActionListener(e -> handleUploadFolder(dir.getId()));
         popupMenu.add(uploadFolderItem);
         
         // 下载整个目录
@@ -943,11 +943,11 @@ public class FileExplorerPanel extends JPanel {
 
     /**
      * 处理上传文件夹到云端
-     * @param cloudPath 云端目标路径（如目录名）
+     * @param targetDirId 云端目标目录ID
      */
-    private void handleUploadFolder(String cloudPath) {
-        if (cloudApiRoot == null) {
-            NotificationUtil.showErrorDialog(this, "无法获取根目录信息，请先刷新。");
+    private void handleUploadFolder(Long targetDirId) {
+        if (cloudApiRoot == null || targetDirId == null) {
+            NotificationUtil.showErrorDialog(this, "无法获取目录信息，请先刷新。");
             return;
         }
         
@@ -970,8 +970,8 @@ public class FileExplorerPanel extends JPanel {
                         cloudFsService.compressDirectoryToZip(selectedDir, tempZipFile);
                         
                         try {
-                            // 2. 上传 ZIP 到云端
-                            boolean success = cloudFsService.uploadZip(tempZipFile, cloudPath, false);
+                            // 2. 上传 ZIP 到云端（使用目录ID）
+                            boolean success = cloudFsService.uploadZipById(tempZipFile, targetDirId, false);
                             return success;
                         } finally {
                             // 3. 删除临时 ZIP 文件
@@ -1026,8 +1026,8 @@ public class FileExplorerPanel extends JPanel {
                         File tempZipFile = File.createTempFile("download_", ".zip");
                         
                         try {
-                            // 2. 从云端下载 ZIP
-                            boolean success = cloudFsService.downloadZip("/" + dir.getName(), tempZipFile);
+                            // 2. 从云端下载 ZIP（使用目录ID）
+                            boolean success = cloudFsService.downloadZipById(dir.getId(), tempZipFile);
                             if (!success) {
                                 return false;
                             }
