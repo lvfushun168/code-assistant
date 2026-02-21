@@ -189,7 +189,7 @@ public class FileExplorerPanel extends JPanel {
                             if (StringUtils.isNotEmpty(contentType) && contentType.equals("none")) {
                                 contentType = "text";
                             }
-                            if (!AppConfig.ALLOWED_EXTENSIONS.contains(contentType)) {
+                            if (StringUtils.isNotEmpty(contentType) && !AppConfig.ALLOWED_EXTENSIONS.contains(contentType)) {
                                 NotificationUtil.showToast(FileExplorerPanel.this, "不支持的文件格式: " + extension);
                                 return;
                             }
