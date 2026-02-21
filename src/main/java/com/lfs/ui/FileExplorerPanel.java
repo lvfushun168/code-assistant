@@ -5,6 +5,7 @@ import com.lfs.domain.ContentResponse;
 import com.lfs.domain.DirTreeResponse;
 import com.lfs.service.*;
 import com.lfs.util.NotificationUtil;
+import org.apache.commons.lang3.StringUtils;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileSystemView;
@@ -183,8 +184,12 @@ public class FileExplorerPanel extends JPanel {
                             if (dotIndex > 0 && dotIndex < fileName.length() - 1) {
                                 extension = fileName.substring(dotIndex + 1);
                             }
-                            
-                            if (!AppConfig.ALLOWED_EXTENSIONS.contains(fileInfo.getType())) {
+
+                            String contentType = fileInfo.getType();
+                            if (StringUtils.isNotEmpty(contentType) && contentType.equals("none")) {
+                                contentType = "text";
+                            }
+                            if (!AppConfig.ALLOWED_EXTENSIONS.contains(contentType)) {
                                 NotificationUtil.showToast(FileExplorerPanel.this, "不支持的文件格式: " + extension);
                                 return;
                             }
