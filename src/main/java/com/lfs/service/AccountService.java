@@ -138,6 +138,28 @@ public class AccountService {
         }
     }
 
+    /**
+     * 续期 Token
+     * 用户活跃时调用，服务端颁发新 token 并保存
+     */
+    public void renewToken() {
+        try {
+            HttpResponse response = HttpClientService.createPostRequest(AppConfig.BASE_URL + AppConfig.RENEW_TOKEN_URL, true)
+                    .execute();
+            HttpClientService.checkResponseStatus(response);
+            String responseBody = response.body();
+            BackendResponse<String> result = JSON.parseObject(responseBody, new TypeReference<BackendResponse<String>>() {});
+            if (result != null && result.getCode() == 200 && result.getData() != null) {
+                UserPreferencesService prefsService = new UserPreferencesService();
+                prefsService.saveToken(result.getData());
+            }
+        } catch (TokenExpiredException e) {
+            TokenManager.notifyTokenExpired();
+        } catch (Exception e) {
+            log.error("Token续期失败", e);
+        }
+    }
+
     public CaptchaResponse getCaptcha() {
         try {
             HttpResponse response = HttpClientService.createGetRequest(AppConfig.BASE_URL + AppConfig.CAPTCHA_URL, false).execute();

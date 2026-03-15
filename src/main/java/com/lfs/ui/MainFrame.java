@@ -5,15 +5,22 @@ import cn.hutool.json.JSONUtil;
 import com.lfs.domain.ContentResponse;
 import com.lfs.service.JavaToJsonService;
 import com.lfs.service.JsonToJavaService;
+import com.lfs.service.AccountService;
+import com.lfs.service.TokenManager;
 import com.lfs.service.UserPreferencesService;
 import com.lfs.util.NotificationUtil;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.AWTEventListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 主框架显示UI
@@ -31,12 +38,26 @@ public class MainFrame extends JFrame {
     private JMenuItem changePasswordMenuItem;
     private JCheckBoxMenuItem lineWrapMenuItem;
 
+    private final ScheduledExecutorService renewScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+        Thread t = new Thread(r, "token-renew");
+        t.setDaemon(true);
+        return t;
+    });
+    // 最近一次用户活跃的时间戳
+    private volatile long lastActiveTime = System.currentTimeMillis();
+    private ScheduledFuture<?> renewTask;
+
     public MainFrame() {
         this.preferencesService = new UserPreferencesService();
         initUI();
         updateAccountMenu();
         // 注册Token过期监听器
         com.lfs.service.TokenManager.addTokenExpiredListener(this::handleTokenExpired);
+        // 启动Token续期调度器
+        startTokenRenewScheduler();
+        // 监听全局鼠标和键盘事件，记录用户活跃时间
+        Toolkit.getDefaultToolkit().addAWTEventListener(event -> lastActiveTime = System.currentTimeMillis(),
+                AWTEvent.MOUSE_EVENT_MASK | AWTEvent.KEY_EVENT_MASK);
     }
 
     private void handleTokenExpired() {
@@ -46,6 +67,22 @@ public class MainFrame extends JFrame {
         if (fileExplorerPanel != null) {
             fileExplorerPanel.switchToLocalTab();
         }
+    }
+
+    /**
+     * 启动定时检查：每5分钟检查一次，若用户在过去5分钟内有活跃则续期token
+     */
+    private void startTokenRenewScheduler() {
+        renewTask = renewScheduler.scheduleAtFixedRate(() -> {
+            if (preferencesService.getToken() == null) {
+                return;
+            }
+            long idleMs = System.currentTimeMillis() - lastActiveTime;
+            // 5分钟内有活跃则续期
+            if (idleMs <= 5 * 60 * 1000L) {
+                new AccountService().renewToken();
+            }
+        }, 5, 5, TimeUnit.MINUTES);
     }
 
     public void updateAccountMenu() {

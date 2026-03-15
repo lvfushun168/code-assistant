@@ -60,6 +60,10 @@ public class AppConfig {
      */
     public static final String CHANGE_PASSWORD_URL = API_PREFIX + "/account/change-password";
     /**
+     * 续期 Token
+     */
+    public static final String RENEW_TOKEN_URL = API_PREFIX + "/account/renew-token";
+    /**
      * 验证码
      */
     public static final String CAPTCHA_URL = API_PREFIX + "/captcha/generate";
